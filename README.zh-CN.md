@@ -1,6 +1,6 @@
 # RAG Writing Skill
 
-[English](README.md)
+
 
 <p align="center">
   <a href="./README.md"><img alt="Language English" src="https://img.shields.io/badge/Language-English-lightgrey"></a>
