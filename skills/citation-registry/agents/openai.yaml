@@ -1,0 +1,4 @@
+interface:
+  display_name: "Citation Registry"
+  short_description: "Order citations by first use and format Chinese references"
+  default_prompt: "Use $citation-registry to register visible citations, renumber references by first in-text citation order, and generate GB/T 7714-style references."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Source Role Policy"
+  short_description: "Classify article sources and citation permissions"
+  default_prompt: "Use $source-role-policy to classify sources into A/B/C/D roles, assign source_type, and decide citation permissions before RAG or citation work."

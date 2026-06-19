@@ -1,0 +1,4 @@
+interface:
+  display_name: "Article RAG Chunking"
+  short_description: "Clean, enrich, card, and rank article sources for RAG"
+  default_prompt: "Use $article-rag-chunking to clean JSON/Markdown sources, enrich metadata, create RAG cards, and generate an ABCD-grouped ranking table for user confirmation."

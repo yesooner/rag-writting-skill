@@ -1,0 +1,9 @@
+name: rag-writing-skill
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - lxml>=4.9
+  - pip
+  - pip:
+      - python-docx>=1.1.0

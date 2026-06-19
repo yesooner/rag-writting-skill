@@ -1,0 +1,64 @@
+RAG Writing Skill - Environment Request
+
+Purpose
+This file describes the runtime environment required by this repository.
+It is intended for GitHub users, Claude Code plugin users, and Codex users.
+
+Python
+- Required: Python 3.10 or later
+- Recommended: Python 3.10-3.12
+- Do not install dependencies into conda base unless you explicitly choose to do so.
+- Use an isolated conda environment, venv, uv environment, or another user-selected Python runtime.
+
+Required Python packages
+- python-docx>=1.1.0
+- lxml>=4.9.0
+
+Install with pip
+python -m pip install -r requirements.txt
+
+Install with conda
+conda env create -f environment.yml
+conda activate rag-writing-skill
+
+Claude Code plugin validation
+claude plugin validate .
+
+Script verification
+python -X utf8 scripts/verify_release.py --root .
+
+Runtime notes
+- RAG metadata, carding, ranking, and enrichment scripts mostly use the Python standard library.
+- Word formatting scripts require python-docx and lxml.
+- Network access is optional. Metadata enrichment can run in local-only mode with --no-network.
+- Missing external metadata must remain null or unknown; do not fabricate DOI, citation counts, or journal metrics.
+
+Local verification helper
+- A local .local/ folder may exist on one developer machine to call an existing Python environment for verification.
+- .local/ is ignored by Git and must not be treated as part of the public release.
+- Public instructions must use <python>, python, conda, or user-selected interpreter placeholders, not a hardcoded local path.
+
+Expected command placeholders
+- <python>: user-selected Python interpreter
+- <input_dir>: source document folder
+- <output_root>: confirmed RAG output root
+- ${CLAUDE_PLUGIN_ROOT}: Claude Code plugin root after installation
+- ${CLAUDE_PROJECT_DIR}: Claude Code project root
+
+Release checks before upload
+Run these checks before uploading to GitHub:
+
+1. Validate plugin:
+   claude plugin validate .
+
+2. Compile scripts:
+   python -X utf8 scripts/verify_release.py --root .
+
+3. Check for hardcoded local paths or project-specific residue:
+   python -X utf8 scripts/verify_release.py --root .
+
+Expected result
+- No hardcoded local machine paths in public files.
+- Plugin validates successfully.
+- Scripts compile successfully.
+- README.md explains usage in both Chinese and English.
