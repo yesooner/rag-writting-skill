@@ -289,6 +289,7 @@ Supported configuration areas:
 - table formatting
 - citation superscripting
 - formula protection
+- CJK-Latin spacing normalization
 
 Figure and caption rules:
 
@@ -301,6 +302,13 @@ Citation superscript rules:
 
 - In-text markers such as `[3]` may be superscripted by configuration.
 - Reference-list labels such as `[3]` are not superscripted by default unless explicitly configured.
+
+CJK-Latin spacing rules:
+
+- Do not keep spaces between CJK characters and Latin letters or digits.
+- `我 love 你` should become `我love你`.
+- The inspection report includes `cjk_latin_spacing_issue_count` and examples.
+- The formatter removes these spaces only when the confirmed config enables `normalize_cjk_latin_spacing`.
 
 Formula protection rules:
 
@@ -333,6 +341,8 @@ The final report should include:
 - reference-list number superscript count
 - formula node count and hash status
 - regular table count
+- CJK-Latin spacing issue count and examples
+- CJK-Latin spaces removed, when normalization is enabled
 
 ## Directory Layout
 

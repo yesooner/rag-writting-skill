@@ -9,6 +9,7 @@ from docx import Document
 
 
 DEFAULT_CITATION_PATTERN = r"\[\d+(?:\s*[-\u2013,\uff0c]\s*\d+)*\]"
+CJK_LATIN_SPACING_PATTERN = re.compile(r"(?<=[\u3400-\u9fff])\s+(?=[A-Za-z0-9])|(?<=[A-Za-z0-9])\s+(?=[\u3400-\u9fff])")
 
 
 def load_config(path: Path | None) -> dict:
@@ -58,6 +59,10 @@ def is_superscript_run(run) -> bool:
     return bool(run._r.xpath('./w:rPr/w:vertAlign[@w:val="superscript"]'))
 
 
+def cjk_latin_spacing_issue_count(text: str) -> int:
+    return len(CJK_LATIN_SPACING_PATTERN.findall(text or ""))
+
+
 def inspect_docx(path: Path, config: dict) -> dict:
     doc = Document(str(path))
     citation_re = re.compile(config.get("citation_pattern", DEFAULT_CITATION_PATTERN))
@@ -71,8 +76,22 @@ def inspect_docx(path: Path, config: dict) -> dict:
     ref_total = 0
     ref_super = 0
     body_unsup = []
+    mixed_spacing_total = 0
+    mixed_spacing_examples = []
     for index, paragraph in enumerate(iter_all_paragraphs(doc), 1):
         text = paragraph.text.strip()
+        spacing_count = cjk_latin_spacing_issue_count(text)
+        if spacing_count:
+            mixed_spacing_total += spacing_count
+            if len(mixed_spacing_examples) < 10:
+                mixed_spacing_examples.append(
+                    {
+                        "paragraph_index": index,
+                        "style": paragraph.style.name,
+                        "issue_count": spacing_count,
+                        "text": text[:160],
+                    }
+                )
         is_ref = (ref_style and paragraph.style.name == ref_style) or text_matches(ref_patterns, text)
         for run in paragraph.runs:
             found = citation_re.findall(run.text or "")
@@ -133,6 +152,8 @@ def inspect_docx(path: Path, config: dict) -> dict:
         "body_citation_unsuperscript_examples": body_unsup[:10],
         "reference_number_count": ref_total,
         "reference_number_superscript_count": ref_super,
+        "cjk_latin_spacing_issue_count": mixed_spacing_total,
+        "cjk_latin_spacing_examples": mixed_spacing_examples,
     }
 
 

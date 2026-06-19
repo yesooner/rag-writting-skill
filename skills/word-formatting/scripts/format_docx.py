@@ -20,6 +20,7 @@ from lxml import etree
 
 
 DEFAULT_CITATION_PATTERN = r"\[\d+(?:\s*[-\u2013,\uff0c]\s*\d+)*\]"
+CJK_LATIN_SPACING_PATTERN = re.compile(r"(?<=[\u3400-\u9fff])\s+(?=[A-Za-z0-9])|(?<=[A-Za-z0-9])\s+(?=[\u3400-\u9fff])")
 FONT_ALIASES = {
     "宋体": "SimSun",
     "黑体": "SimHei",
@@ -56,6 +57,7 @@ def default_config() -> dict:
             "format_tables": True,
             "superscript_citations": True,
             "protect_formulas": True,
+            "normalize_cjk_latin_spacing": True,
         },
         "citation_pattern": DEFAULT_CITATION_PATTERN,
         "styles": {
@@ -450,6 +452,34 @@ def iter_all_paragraphs(doc: Document):
                         yield paragraph
 
 
+def normalize_cjk_latin_spacing_text(text: str) -> str:
+    return CJK_LATIN_SPACING_PATTERN.sub("", text)
+
+
+def cjk_latin_spacing_issue_count(text: str) -> int:
+    return len(CJK_LATIN_SPACING_PATTERN.findall(text or ""))
+
+
+def normalize_cjk_latin_spacing(doc: Document) -> int:
+    changed = 0
+    for paragraph in iter_all_paragraphs(doc):
+        for run in paragraph.runs:
+            text = run.text or ""
+            normalized = normalize_cjk_latin_spacing_text(text)
+            if normalized != text:
+                changed += cjk_latin_spacing_issue_count(text)
+                run.text = normalized
+    return changed
+
+
+def document_text(doc: Document) -> str:
+    return "\n".join(paragraph.text for paragraph in doc.paragraphs)
+
+
+def normalized_document_text(doc: Document) -> str:
+    return "\n".join(normalize_cjk_latin_spacing_text(paragraph.text) for paragraph in doc.paragraphs)
+
+
 def make_text_run(text: str, source_run, superscript: bool):
     new_run = OxmlElement("w:r")
     old_rpr = source_run.find(qn("w:rPr"))
@@ -561,7 +591,8 @@ def format_docx(path: Path, config: dict) -> dict:
     doc = Document(str(path))
     initial_math = math_hashes(doc)
     initial_images = len(doc.inline_shapes)
-    initial_text = "\n".join(p.text for p in doc.paragraphs)
+    normalize_spacing_enabled = config.get("features", {}).get("normalize_cjk_latin_spacing", False)
+    initial_text = normalized_document_text(doc) if normalize_spacing_enabled else document_text(doc)
 
     styles = create_styles(doc, config)
     set_page_setup(doc, config)
@@ -569,13 +600,15 @@ def format_docx(path: Path, config: dict) -> dict:
     style_counts = style_top_level_paragraphs(doc, styles, config)
     wrapped = wrap_figures(doc, styles, config) if config.get("features", {}).get("wrap_figures", False) else 0
     figure_tables, regular_tables = format_tables(doc, styles, config) if config.get("features", {}).get("format_tables", False) else (0, len(doc.tables))
+    cjk_latin_spaces_removed = normalize_cjk_latin_spacing(doc) if normalize_spacing_enabled else 0
     citation_marks = superscript_citations(doc, config) if config.get("features", {}).get("superscript_citations", False) else 0
 
     if config.get("features", {}).get("protect_formulas", True) and math_hashes(doc) != initial_math:
         raise RuntimeError("Formula XML changed; aborting without saving.")
     if len(doc.inline_shapes) != initial_images:
         raise RuntimeError(f"Image count changed {initial_images} -> {len(doc.inline_shapes)}; aborting without saving.")
-    if "\n".join(p.text for p in doc.paragraphs) != initial_text:
+    final_text = document_text(doc)
+    if final_text != initial_text:
         raise RuntimeError("Top-level paragraph text changed; aborting without saving.")
     doc.save(str(path))
     saved = Document(str(path))
@@ -591,6 +624,7 @@ def format_docx(path: Path, config: dict) -> dict:
             "formatted_figure_tables": figure_tables,
             "formatted_regular_tables": regular_tables,
             "citation_marks_changed": citation_marks,
+            "cjk_latin_spaces_removed": cjk_latin_spaces_removed,
         },
     )
 
