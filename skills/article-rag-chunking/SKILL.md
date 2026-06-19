@@ -49,6 +49,7 @@ Accept paired or standalone source files:
 paper.json + paper.md
 patent.json + patent.md
 standard.json + standard.md
+technical_specification.json + technical_specification.md
 report.json + report.md
 dataset.json + data_summary.md
 note.json + note.md
@@ -281,6 +282,7 @@ Use `source_type` for source form; allowed values and permission defaults are de
 - D sources support internal evidence logs, not final reference lists.
 - A/B/C patent, standard, code, guideline, and regulation sources enter references only when visibly cited.
 - Standards and codes must record clause or section when used.
+- Technical specifications must record section, clause, table, figure, or requirement identifier when used.
 - Patents must record claim, abstract, or description location when used.
 
 ## Card Generation

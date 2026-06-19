@@ -157,6 +157,7 @@ standard
 code
 guideline
 regulation
+technical_specification
 report
 dataset
 spreadsheet

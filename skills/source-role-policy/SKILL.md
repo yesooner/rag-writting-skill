@@ -43,6 +43,7 @@ standard
 code
 guideline
 regulation
+technical_specification
 report
 dataset
 spreadsheet
@@ -52,7 +53,7 @@ thesis
 web
 ```
 
-Patent, standards, and codes are source types, not separate classes.
+Patent, standards, codes, guidelines, regulations, and technical specifications are source types, not separate classes.
 
 ## Permission Defaults
 
@@ -87,7 +88,7 @@ Patent sources:
 - Put in `C_method` if used for construction method, mechanism, claim alignment, or technical implementation.
 - Put in `D_internal` if used only as internal inspiration and not visibly cited.
 
-Standard/code/guideline/regulation sources:
+Standard/code/guideline/regulation/technical specification sources:
 
 - Use the matching `source_type`.
 - Put in `C_method` when used for methods, design constraints, test protocols, formulas, or evaluation criteria.

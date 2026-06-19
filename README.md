@@ -11,9 +11,10 @@ RAG Writing Skill is a Claude Code/Codex skill suite for preparing article sourc
 
 ## Overview
 
-This repository provides four sub-skills:
+This repository provides five sub-skills:
 
 ```text
+research-workflow
 article-rag-chunking
 source-role-policy
 citation-registry
@@ -21,6 +22,18 @@ word-formatting
 ```
 
 Default workflow:
+
+```text
+research-workflow
+-> source-role-policy
+-> article-rag-chunking
+-> citation-registry
+-> word-formatting, only when .docx formatting is requested
+```
+
+Use `research-workflow` when you need the full human-in-the-loop research process. Use `article-rag-chunking` directly when sources are already selected and only need RAG cards.
+
+RAG-only workflow:
 
 ```text
 source-role-policy
@@ -34,6 +47,7 @@ source-role-policy
 After installing as a Claude Code plugin:
 
 ```text
+/rag-writing-skill:research-workflow
 /rag-writing-skill:article-rag-chunking
 /rag-writing-skill:source-role-policy
 /rag-writing-skill:citation-registry
@@ -51,6 +65,7 @@ claude plugin validate .
 Codex does not rely on Claude Code slash commands. Trigger skills with natural language or explicit skill names:
 
 ```text
+use research-workflow
 use article-rag-chunking
 use source-role-policy
 use citation-registry
@@ -77,6 +92,37 @@ Verify the release candidate:
 ```powershell
 python -X utf8 scripts\verify_release.py --root .
 ```
+
+## research-workflow
+
+Purpose: run the full human-in-the-loop research process from topic definition to final report preparation.
+
+Default process:
+
+```text
+human topic definition
+-> AI-assisted search
+-> human screening
+-> AI evidence organization
+-> human conclusion confirmation
+-> AI review/report draft
+-> human revision and finalization
+```
+
+Compact default outputs:
+
+```text
+<output_root>\research_brief.md
+<output_root>\source_candidates.csv
+<output_root>\evidence_registry.csv
+<output_root>\human_decisions.md
+<output_root>\report_draft_v1.md
+<output_root>\qa_checklist.md
+```
+
+Report drafts and final reports use versioned names such as `report_draft_v1.md`, `report_draft_v2.md`, and `final_report_v1.md`; existing versioned report files must not be overwritten. User-visible outputs default to Chinese unless the user requests another language, while original titles, identifiers, proper nouns, and exact quotations may stay in their source language.
+
+Supported research tracks include papers, reviews, patents, standards, codes, guidelines, regulations, technical specifications, reports, datasets, and web sources. Optional tracks may be marked `not_searched` or `needed_later`; missing sources must not be fabricated.
 
 ## article-rag-chunking
 
@@ -196,6 +242,7 @@ standard
 code
 guideline
 regulation
+technical_specification
 report
 dataset
 spreadsheet
@@ -208,7 +255,7 @@ web
 Important rules:
 
 - `source-role-policy` owns the A/B/C/D definitions.
-- Patents, standards, codes, and guidelines are source types.
+- Patents, standards, codes, guidelines, regulations, and technical specifications are source types.
 - `D_internal` defaults to internal evidence only.
 - `source_class` never determines bibliography numbering.
 
@@ -247,7 +294,7 @@ Common document type markers:
 ```text
 paper/review -> [J]
 patent -> [P]
-standard/code/guideline/regulation -> [S]
+standard/code/guideline/regulation/technical_specification -> [S]
 book -> [M]
 thesis -> [D]
 web -> [EB/OL]
@@ -350,6 +397,7 @@ The final report should include:
 ```text
 .claude-plugin/
 skills/
+  research-workflow/
   article-rag-chunking/
   source-role-policy/
   citation-registry/

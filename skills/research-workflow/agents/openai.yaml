@@ -1,0 +1,7 @@
+interface:
+  display_name: "Research Workflow"
+  short_description: "Human-in-loop research reports"
+  default_prompt: "Use $research-workflow to define the topic, screen sources, organize evidence, confirm conclusions, and draft a concise research report."
+
+policy:
+  allow_implicit_invocation: true

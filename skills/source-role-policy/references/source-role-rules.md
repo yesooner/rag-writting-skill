@@ -28,6 +28,7 @@ Examples:
 - central dataset description paper
 - patent central to article novelty
 - standard/code central to the article objective
+- technical specification central to the article objective
 
 ### B_background
 
@@ -52,6 +53,7 @@ Examples:
 - evaluation metric definition
 - standard clause
 - code provision
+- technical specification requirement
 - terminology source
 
 ### D_internal
@@ -82,6 +84,7 @@ standard: formal standard
 code: design code or technical code
 guideline: guideline or recommended practice
 regulation: law or administrative regulation
+technical_specification: port, interface, product, system, or engineering technical specification
 report: institutional/technical report
 dataset: structured dataset
 spreadsheet: Excel/CSV spreadsheet
@@ -119,7 +122,7 @@ If a D source is explicitly made citeable by the user, record the override:
 Set `source_class=unclassified` when:
 
 - metadata is incomplete
-- a patent/standard might be either A or C
+- a patent/standard/technical specification might be either A or C
 - a report might be public or internal
 - a dataset might be citeable or private
 - user intent is unclear
@@ -134,11 +137,11 @@ Confirmed classification record:
 {
   "source_id": "",
   "source_class": "C_method",
-  "source_type": "standard",
+  "source_type": "technical_specification",
   "cite_allowed": true,
   "reference_allowed": true,
   "classification_confidence": 0.9,
-  "classification_reason": "Standard clause supports method/evaluation criteria.",
+  "classification_reason": "Technical specification supports method/evaluation criteria.",
   "classified_by": "agent",
   "user_confirmed": false
 }

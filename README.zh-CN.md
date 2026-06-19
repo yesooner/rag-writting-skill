@@ -12,9 +12,10 @@ RAG Writing Skill 是一套面向 Claude Code 和 Codex 的通用写作辅助 sk
 
 ## 功能概览
 
-本仓库包含 4 个子 skill：
+本仓库包含 5 个子 skill：
 
 ```text
+research-workflow
 article-rag-chunking
 source-role-policy
 citation-registry
@@ -22,6 +23,18 @@ word-formatting
 ```
 
 默认协作流程：
+
+```text
+research-workflow
+-> source-role-policy
+-> article-rag-chunking
+-> citation-registry
+-> word-formatting（仅在需要处理 .docx 时使用）
+```
+
+需要完整“人工定题到报告初稿”流程时，优先调用 `research-workflow`。如果资料已经筛选完成、只需要做 RAG 卡片，则直接调用 `article-rag-chunking`。
+
+仅做 RAG 的流程：
 
 ```text
 source-role-policy
@@ -35,6 +48,7 @@ source-role-policy
 作为 Claude Code plugin 安装后，使用命名空间调用：
 
 ```text
+/rag-writing-skill:research-workflow
 /rag-writing-skill:article-rag-chunking
 /rag-writing-skill:source-role-policy
 /rag-writing-skill:citation-registry
@@ -52,6 +66,7 @@ claude plugin validate .
 Codex 不依赖 Claude Code slash command。可以用自然语言或显式 skill 名触发：
 
 ```text
+use research-workflow
 use article-rag-chunking
 use source-role-policy
 use citation-registry
@@ -78,6 +93,37 @@ conda activate rag-writing-skill
 ```powershell
 python -X utf8 scripts\verify_release.py --root .
 ```
+
+## research-workflow
+
+用途：执行完整的人机协作调研流程，从人工定题到 AI 生成综述/报告初稿，再到人工修改定稿。
+
+默认流程：
+
+```text
+人工定题
+-> AI 辅助检索
+-> 人工筛选
+-> AI 整理证据
+-> 人工确认结论
+-> AI 生成报告综述初稿
+-> 人工修改定稿
+```
+
+默认只生成少量核心文件：
+
+```text
+<output_root>\research_brief.md
+<output_root>\source_candidates.csv
+<output_root>\evidence_registry.csv
+<output_root>\human_decisions.md
+<output_root>\report_draft_v1.md
+<output_root>\qa_checklist.md
+```
+
+报告初稿和最终稿必须使用版本号命名，例如 `report_draft_v1.md`、`report_draft_v2.md`、`final_report_v1.md`，不得覆盖已有版本。用户可见输出默认使用中文；英文论文题名、专利题名、标准号、DOI、机构名、专有名词和必要原文引文可保留原文。
+
+支持论文、综述、专利、标准、规范、指南、法规、技术规格、报告、数据集和网页来源。暂时没有的标准/规范类资料可标记为 `not_searched` 或 `needed_later`，不得编造。
 
 ## article-rag-chunking
 
@@ -186,6 +232,7 @@ standard
 code
 guideline
 regulation
+technical_specification
 report
 dataset
 spreadsheet
@@ -198,7 +245,7 @@ web
 关键规则：
 
 - A/B/C/D 的定义由 `source-role-policy` 负责。
-- 专利、标准、规范和指南是 `source_type`。
+- 专利、标准、规范、指南、法规和技术规格是 `source_type`。
 - `D_internal` 默认只作为内部证据。
 - `source_class` 不决定参考文献编号。
 
@@ -291,6 +338,7 @@ python -X utf8 skills\word-formatting\scripts\format_docx.py `
 ```text
 .claude-plugin/
 skills/
+  research-workflow/
   article-rag-chunking/
   source-role-policy/
   citation-registry/
