@@ -3,7 +3,7 @@
 
 <p align="center">
   <a href="./README.md"><img alt="Language English" src="https://img.shields.io/badge/Language-English-lightgrey"></a>
-  <a href="./README.zh-CN.md"><img alt="语言 中文" src="https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87-blue"></a>
+  <a href="./README.zh-CN.md"><img alt="Language Chinese" src="https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87-blue"></a>
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-orange"></a>
 </p>
 
@@ -289,7 +289,7 @@ Supported configuration areas:
 - table formatting
 - citation superscripting
 - formula protection
-- CJK-Latin spacing normalization
+- CJK-alphanumeric spacing normalization
 
 Figure and caption rules:
 
@@ -303,11 +303,12 @@ Citation superscript rules:
 - In-text markers such as `[3]` may be superscripted by configuration.
 - Reference-list labels such as `[3]` are not superscripted by default unless explicitly configured.
 
-CJK-Latin spacing rules:
+CJK-alphanumeric spacing rules:
 
-- Do not keep spaces between CJK characters and Latin letters or digits.
-- `我 love 你` should become `我love你`.
-- The inspection report includes `cjk_latin_spacing_issue_count` and examples.
+- Do not keep spaces between CJK characters and Latin letters or Arabic digits.
+- `CJK_char love CJK_char` should become `CJK_charloveCJK_char`.
+- `CJK_char 1 CJK_char model` should become `CJK_char1CJK_charmodel`.
+- The inspection report includes `cjk_alnum_spacing_issue_count`, `cjk_latin_spacing_issue_count`, and examples.
 - The formatter removes these spaces only when the confirmed config enables `normalize_cjk_latin_spacing`.
 
 Formula protection rules:
@@ -341,8 +342,8 @@ The final report should include:
 - reference-list number superscript count
 - formula node count and hash status
 - regular table count
-- CJK-Latin spacing issue count and examples
-- CJK-Latin spaces removed, when normalization is enabled
+- CJK-Alphanumeric Spacing issue count and examples
+- CJK-alphanumeric spaces removed, when normalization is enabled
 
 ## Directory Layout
 
@@ -360,3 +361,4 @@ request.txt
 README.md
 README.zh-CN.md
 ```
+

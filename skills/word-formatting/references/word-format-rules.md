@@ -121,25 +121,25 @@ Default citation pattern:
 
 Do not superscript paragraphs matching `patterns.reference` or paragraphs styled with the configured reference style.
 
-## CJK-Latin Spacing
+## CJK-Alphanumeric Spacing
 
-If `features.normalize_cjk_latin_spacing` is true, remove spaces between CJK characters and Latin letters or digits.
+If `features.normalize_cjk_latin_spacing` is true, remove spaces between CJK characters and Latin letters or Arabic digits.
 
 Examples:
 
 ```text
-Wrong: 我 love 你
-Right: 我love你
+Wrong: CJK_char love CJK_char
+Right: CJK_charloveCJK_char
 
-Wrong: 第 1 个 model
-Right: 第1个model
+Wrong: CJK_char 1 CJK_char model
+Right: CJK_char1CJK_charmodel
 ```
 
 The formatter should remove only this pattern:
 
 ```text
-CJK + spaces + Latin/digit
-Latin/digit + spaces + CJK
+CJK + spaces + Latin letter/digit
+Latin letter/digit + spaces + CJK
 ```
 
 Do not remove spaces between Latin words.
@@ -147,6 +147,8 @@ Do not remove spaces between Latin words.
 The inspection report must include:
 
 ```text
+cjk_alnum_spacing_issue_count
+cjk_alnum_spacing_examples
 cjk_latin_spacing_issue_count
 cjk_latin_spacing_examples
 ```
@@ -154,6 +156,7 @@ cjk_latin_spacing_examples
 The formatting report must include:
 
 ```text
+cjk_alnum_spaces_removed
 cjk_latin_spaces_removed
 ```
 
@@ -162,3 +165,4 @@ cjk_latin_spaces_removed
 If `features.protect_formulas` is true, compare pre/post hashes of all `m:oMath` and `m:oMathPara` nodes. If the count or hash sequence changes, abort before saving.
 
 Do not rewrite formula XML.
+

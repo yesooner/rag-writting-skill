@@ -20,7 +20,8 @@ from lxml import etree
 
 
 DEFAULT_CITATION_PATTERN = r"\[\d+(?:\s*[-\u2013,\uff0c]\s*\d+)*\]"
-CJK_LATIN_SPACING_PATTERN = re.compile(r"(?<=[\u3400-\u9fff])\s+(?=[A-Za-z0-9])|(?<=[A-Za-z0-9])\s+(?=[\u3400-\u9fff])")
+CJK_ALNUM_SPACING_PATTERN = re.compile(r"(?<=[\u3400-\u9fff])\s+(?=[A-Za-z0-9])|(?<=[A-Za-z0-9])\s+(?=[\u3400-\u9fff])")
+CJK_LATIN_SPACING_PATTERN = CJK_ALNUM_SPACING_PATTERN
 FONT_ALIASES = {
     "宋体": "SimSun",
     "黑体": "SimHei",
@@ -452,12 +453,20 @@ def iter_all_paragraphs(doc: Document):
                         yield paragraph
 
 
+def normalize_cjk_alnum_spacing_text(text: str) -> str:
+    return CJK_ALNUM_SPACING_PATTERN.sub("", text)
+
+
 def normalize_cjk_latin_spacing_text(text: str) -> str:
-    return CJK_LATIN_SPACING_PATTERN.sub("", text)
+    return normalize_cjk_alnum_spacing_text(text)
+
+
+def cjk_alnum_spacing_issue_count(text: str) -> int:
+    return len(CJK_ALNUM_SPACING_PATTERN.findall(text or ""))
 
 
 def cjk_latin_spacing_issue_count(text: str) -> int:
-    return len(CJK_LATIN_SPACING_PATTERN.findall(text or ""))
+    return cjk_alnum_spacing_issue_count(text)
 
 
 def normalize_cjk_latin_spacing(doc: Document) -> int:
@@ -467,7 +476,7 @@ def normalize_cjk_latin_spacing(doc: Document) -> int:
             text = run.text or ""
             normalized = normalize_cjk_latin_spacing_text(text)
             if normalized != text:
-                changed += cjk_latin_spacing_issue_count(text)
+                changed += cjk_alnum_spacing_issue_count(text)
                 run.text = normalized
     return changed
 
@@ -624,6 +633,7 @@ def format_docx(path: Path, config: dict) -> dict:
             "formatted_figure_tables": figure_tables,
             "formatted_regular_tables": regular_tables,
             "citation_marks_changed": citation_marks,
+            "cjk_alnum_spaces_removed": cjk_latin_spaces_removed,
             "cjk_latin_spaces_removed": cjk_latin_spaces_removed,
         },
     )

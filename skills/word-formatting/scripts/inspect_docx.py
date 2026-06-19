@@ -9,7 +9,8 @@ from docx import Document
 
 
 DEFAULT_CITATION_PATTERN = r"\[\d+(?:\s*[-\u2013,\uff0c]\s*\d+)*\]"
-CJK_LATIN_SPACING_PATTERN = re.compile(r"(?<=[\u3400-\u9fff])\s+(?=[A-Za-z0-9])|(?<=[A-Za-z0-9])\s+(?=[\u3400-\u9fff])")
+CJK_ALNUM_SPACING_PATTERN = re.compile(r"(?<=[\u3400-\u9fff])\s+(?=[A-Za-z0-9])|(?<=[A-Za-z0-9])\s+(?=[\u3400-\u9fff])")
+CJK_LATIN_SPACING_PATTERN = CJK_ALNUM_SPACING_PATTERN
 
 
 def load_config(path: Path | None) -> dict:
@@ -59,8 +60,12 @@ def is_superscript_run(run) -> bool:
     return bool(run._r.xpath('./w:rPr/w:vertAlign[@w:val="superscript"]'))
 
 
+def cjk_alnum_spacing_issue_count(text: str) -> int:
+    return len(CJK_ALNUM_SPACING_PATTERN.findall(text or ""))
+
+
 def cjk_latin_spacing_issue_count(text: str) -> int:
-    return len(CJK_LATIN_SPACING_PATTERN.findall(text or ""))
+    return cjk_alnum_spacing_issue_count(text)
 
 
 def inspect_docx(path: Path, config: dict) -> dict:
@@ -80,7 +85,7 @@ def inspect_docx(path: Path, config: dict) -> dict:
     mixed_spacing_examples = []
     for index, paragraph in enumerate(iter_all_paragraphs(doc), 1):
         text = paragraph.text.strip()
-        spacing_count = cjk_latin_spacing_issue_count(text)
+        spacing_count = cjk_alnum_spacing_issue_count(text)
         if spacing_count:
             mixed_spacing_total += spacing_count
             if len(mixed_spacing_examples) < 10:
@@ -152,6 +157,8 @@ def inspect_docx(path: Path, config: dict) -> dict:
         "body_citation_unsuperscript_examples": body_unsup[:10],
         "reference_number_count": ref_total,
         "reference_number_superscript_count": ref_super,
+        "cjk_alnum_spacing_issue_count": mixed_spacing_total,
+        "cjk_alnum_spacing_examples": mixed_spacing_examples,
         "cjk_latin_spacing_issue_count": mixed_spacing_total,
         "cjk_latin_spacing_examples": mixed_spacing_examples,
     }

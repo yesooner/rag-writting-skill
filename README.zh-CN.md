@@ -1,6 +1,6 @@
 # RAG Writing Skill
 
-
+[English](README.md)
 
 <p align="center">
   <a href="./README.md"><img alt="Language English" src="https://img.shields.io/badge/Language-English-lightgrey"></a>
@@ -62,13 +62,11 @@ use word-formatting
 
 推荐使用独立 Python 环境，不要默认安装到 conda `base`。
 
-使用 pip：
-
 ```powershell
 python -m pip install -r requirements.txt
 ```
 
-使用 conda：
+或：
 
 ```powershell
 conda env create -f environment.yml
@@ -102,17 +100,6 @@ python -X utf8 scripts\verify_release.py --root .
 <output_root>\cards
 <output_root>\ranking
 <output_root>\logs
-```
-
-主要输出文件：
-
-```text
-<output_root>\metadata\metadata_raw.jsonl
-<output_root>\metadata\metadata_enriched.jsonl
-<output_root>\cards\*.jsonl
-<output_root>\ranking\default_source_ranking.md
-<output_root>\ranking\default_source_ranking.json
-<output_root>\logs\pipeline_steps.json
 ```
 
 支持的 `content_kind`：
@@ -228,43 +215,6 @@ web
 - 不得编造 DOI 或标识符。
 - 内部数据证据默认不进入文末参考文献，除非用户明确允许。
 
-推荐可见引用链：
-
-```text
-visible manuscript claim
--> citation_registry.jsonl
--> first-appearance numbering
--> GB/T 7714-style reference list
-```
-
-内部证据链：
-
-```text
-project data/internal note
--> data_evidence_log.jsonl 或 internal_evidence_log.jsonl
--> no final reference entry
-```
-
-常见文献类型标识：
-
-```text
-paper/review -> [J]
-patent -> [P]
-standard/code/guideline/regulation -> [S]
-book -> [M]
-thesis -> [D]
-web -> [EB/OL]
-report -> [R]
-```
-
-最终检查：
-
-- 每个正文可见引用都有 registry 记录。
-- 每条文末参考文献至少被正文引用一次。
-- 编号从 1 到 N 连续。
-- 重复引用复用首次编号。
-- 内部数据默认不进入参考文献。
-
 ## word-formatting
 
 用途：根据用户确认的格式表检查和修改 `.docx` 文件。
@@ -292,32 +242,21 @@ report -> [R]
 - 表格格式
 - 引用编号上标
 - 公式保护
-- 中英混排空格规范化
+- 中文与英文、数字混排空格规范化
 
-图和图题规则：
+中英数字混排空格规则：
 
-- 可将图片和图题放入一列两行表格。
-- 第一行放图片。
-- 第二行放图题。
-- 图题字号由用户确认的格式表决定。
-
-引用编号规则：
-
-- 正文中的 `[3]` 这类引用编号可按配置转为上标。
-- 文末参考文献列表的 `[3]` 默认不上标，除非用户显式配置。
-
-中英混排空格规则：
-
-- 中文字符和英文字母或数字之间不保留空格。
+- 中文字符和英文字母、阿拉伯数字之间不保留空格。
 - `我 love 你` 应改为 `我love你`。
-- 检查报告包含 `cjk_latin_spacing_issue_count` 和示例。
+- `第 1 个 model` 应改为 `第1个model`。
+- 检查报告包含 `cjk_alnum_spacing_issue_count`、`cjk_latin_spacing_issue_count` 和示例。
 - 只有在确认配置启用 `normalize_cjk_latin_spacing` 时，格式化脚本才自动删除这些空格。
 
 公式保护规则：
 
 - 修改前后检查公式节点或公式 XML 哈希。
 - 如果公式或图片数量异常，必须中止保存。
-- 不得改变正文文本内容。
+- 不得改变正文文本内容，除非用户确认启用混排空格规范化。
 
 常用命令：
 
@@ -344,8 +283,8 @@ python -X utf8 skills\word-formatting\scripts\format_docx.py `
 - 参考文献列表编号上标数量
 - 公式节点数量和哈希状态
 - 普通表格数量
-- 中英混排空格问题数量和示例
-- 启用规范化时删除的中英混排空格数量
+- 中英数字混排空格问题数量和示例
+- 启用规范化时删除的中英数字混排空格数量
 
 ## 目录结构
 

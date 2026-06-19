@@ -71,34 +71,36 @@ The config controls:
 - table formatting
 - citation superscripting
 - formula protection
-- CJK-Latin spacing normalization
+- CJK-alphanumeric spacing normalization
 
 No style name is hardcoded as a project-specific requirement. Style names are whatever the confirmed config says.
 
-## CJK-Latin Spacing
+## CJK-Alphanumeric Spacing
 
-For Chinese-English mixed text, do not add spaces between CJK characters and Latin letters or digits.
+For Chinese-English and Chinese-number mixed text, do not add spaces between CJK characters and Latin letters or Arabic digits.
 
 Examples:
 
 ```text
-Wrong: 我 love 你
-Right: 我love你
+Wrong: CJK_char love CJK_char
+Right: CJK_charloveCJK_char
 
-Wrong: 第 1 个 model
-Right: 第1个model
+Wrong: CJK_char 1 CJK_char model
+Right: CJK_char1CJK_charmodel
 ```
 
 The formatter must treat spaces matching this pattern as formatting defects:
 
 ```text
-CJK + spaces + Latin/digit
-Latin/digit + spaces + CJK
+CJK + spaces + Latin letter/digit
+Latin letter/digit + spaces + CJK
 ```
 
-Inspection must report:
+Inspection must report both the new generic fields and the legacy compatibility fields:
 
 ```text
+cjk_alnum_spacing_issue_count
+cjk_alnum_spacing_examples
 cjk_latin_spacing_issue_count
 cjk_latin_spacing_examples
 ```
@@ -135,8 +137,8 @@ body citation superscript count
 body citation unsuperscript examples
 reference-list number count
 reference-list number superscript count
-CJK-Latin spacing issue count
-CJK-Latin spacing examples
+CJK-Alphanumeric Spacing issue count
+CJK-Alphanumeric Spacing examples
 ```
 
 Figure and caption checks:
@@ -167,7 +169,7 @@ Citation checks:
 ## Safety Rules
 
 - Back up the `.docx` before every write.
-- Do not change manuscript text content except user-confirmed CJK-Latin spacing normalization.
+- Do not change manuscript text content except user-confirmed CJK-alphanumeric spacing normalization.
 - Preserve image count.
 - Preserve formula XML hashes.
 - Abort rather than save if formulas or images are corrupted.
@@ -187,6 +189,7 @@ After formatting or inspection, report:
 - reference-list number superscript count
 - formula node count and hash status
 - regular table count
-- CJK-Latin spacing issue count and examples
-- CJK-Latin spaces removed, when normalization is enabled
+- CJK-Alphanumeric Spacing issue count and examples
+- CJK-alphanumeric spaces removed, when normalization is enabled
+
 
