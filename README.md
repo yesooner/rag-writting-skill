@@ -7,16 +7,20 @@
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-orange"></a>
 </p>
 
-RAG Writing Skill is a Claude Code/Codex skill suite for preparing article sources, building typed RAG cards, managing source roles, repairing numbered citations, and applying user-confirmed Word formatting.
+RAG Writing Skill is a Claude Code/Codex skill suite for preparing article sources, building typed RAG cards, planning section queries, running hybrid retrieval, checking claim-evidence links, repairing numbered citations, and applying user-confirmed Word formatting.
 
 ## Overview
 
-This repository provides five sub-skills:
+This repository provides nine sub-skills:
 
 ```text
 research-workflow
 article-rag-chunking
 source-role-policy
+query-planner
+hybrid-retrieval
+section-writing-router
+claim-evidence-checker
 citation-registry
 word-formatting
 ```
@@ -27,6 +31,10 @@ Default workflow:
 research-workflow
 -> source-role-policy
 -> article-rag-chunking
+-> query-planner
+-> hybrid-retrieval
+-> section-writing-router
+-> claim-evidence-checker
 -> citation-registry
 -> word-formatting, only when .docx formatting is requested
 ```
@@ -38,6 +46,10 @@ RAG-only workflow:
 ```text
 source-role-policy
 -> article-rag-chunking
+-> query-planner
+-> hybrid-retrieval
+-> section-writing-router
+-> claim-evidence-checker
 -> citation-registry
 -> word-formatting, only when .docx formatting is requested
 ```
@@ -50,6 +62,10 @@ After installing as a Claude Code plugin:
 /rag-writing-skill:research-workflow
 /rag-writing-skill:article-rag-chunking
 /rag-writing-skill:source-role-policy
+/rag-writing-skill:query-planner
+/rag-writing-skill:hybrid-retrieval
+/rag-writing-skill:section-writing-router
+/rag-writing-skill:claim-evidence-checker
 /rag-writing-skill:citation-registry
 /rag-writing-skill:word-formatting
 ```
@@ -68,6 +84,10 @@ Codex does not rely on Claude Code slash commands. Trigger skills with natural l
 use research-workflow
 use article-rag-chunking
 use source-role-policy
+use query-planner
+use hybrid-retrieval
+use section-writing-router
+use claim-evidence-checker
 use citation-registry
 use word-formatting
 ```
@@ -113,6 +133,7 @@ Compact default outputs:
 
 ```text
 <output_root>\research_brief.md
+<output_root>\workflow_state.json
 <output_root>\source_candidates.csv
 <output_root>\evidence_registry.csv
 <output_root>\human_decisions.md
@@ -123,6 +144,13 @@ Compact default outputs:
 Report drafts and final reports use versioned names such as `report_draft_v1.md`, `report_draft_v2.md`, and `final_report_v1.md`; existing versioned report files must not be overwritten. User-visible outputs default to Chinese unless the user requests another language, while original titles, identifiers, proper nouns, and exact quotations may stay in their source language.
 
 Supported research tracks include papers, reviews, patents, standards, codes, guidelines, regulations, technical specifications, reports, datasets, and web sources. Optional tracks may be marked `not_searched` or `needed_later`; missing sources must not be fabricated.
+
+For RAG-based manuscript writing, workflow state prevents skipped steps:
+
+```text
+workflow_state.json
+query_plan_status -> retrieval_status -> section_draft_status -> claim_check_status -> citation_status
+```
 
 ## article-rag-chunking
 
@@ -208,6 +236,92 @@ python -X utf8 skills\article-rag-chunking\scripts\run_rag_pipeline.py `
   --input-dir "<source-folder>" `
   --output-root "<output_root>" `
   --no-network
+```
+
+## query-planner
+
+Purpose: split a manuscript task into section-level retrieval queries.
+
+Output:
+
+```text
+<output_root>\queries\query_plan.json
+```
+
+Script:
+
+```powershell
+python -X utf8 skills\query-planner\scripts\build_query_plan.py `
+  --output-root "<output_root>" --title "<article title>"
+```
+
+Default section purposes:
+
+```text
+Introduction: background, research gap, state of the art
+Method: model setup, parameter basis, standard/code, formula/metric
+Results: comparison, mechanism explanation, failure mode
+Discussion: limitation, contradiction, engineering implication
+```
+
+## hybrid-retrieval
+
+Purpose: retrieve evidence from cards with BM25 or keyword retrieval, optional dense retrieval, source-class filters, content-kind filters, and section-purpose reranking.
+
+Output:
+
+```text
+<output_root>\retrieval\retrieval_trace.jsonl
+```
+
+Script:
+
+```powershell
+python -X utf8 skills\hybrid-retrieval\scripts\retrieve_cards.py `
+  --output-root "<output_root>"
+```
+
+## section-writing-router
+
+Purpose: route each manuscript section through section-specific RAG strategy.
+
+```text
+Introduction -> A_core + B_background
+Method -> C_method + standard/equation/method cards
+Results -> A_core + result/table/figure cards
+Discussion -> A_core + contradiction + limitation evidence
+```
+
+## claim-evidence-checker
+
+Purpose: check every factual claim against evidence cards, source permissions, locations, and citation records.
+
+Outputs:
+
+```text
+<output_root>\claims\claim_registry.jsonl
+<output_root>\claims\evidence_units.jsonl
+<output_root>\claims\claim_evidence_map.jsonl
+<output_root>\qa\unsupported_claims.csv
+<output_root>\qa\weak_evidence_claims.csv
+<output_root>\qa\citation_mismatch.csv
+```
+
+Script:
+
+```powershell
+python -X utf8 skills\claim-evidence-checker\scripts\check_claim_evidence.py `
+  --output-root "<output_root>"
+```
+
+Required checks:
+
+```text
+fact claims need source_id
+key claims need page_or_location
+formula claims need equation_card or C_method source
+result claims need result/table/figure evidence
+D_internal is not public reference evidence by default
 ```
 
 ## source-role-policy
@@ -400,6 +514,10 @@ skills/
   research-workflow/
   article-rag-chunking/
   source-role-policy/
+  query-planner/
+  hybrid-retrieval/
+  section-writing-router/
+  claim-evidence-checker/
   citation-registry/
   word-formatting/
 scripts/

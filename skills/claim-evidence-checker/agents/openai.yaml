@@ -1,0 +1,7 @@
+interface:
+  display_name: "Claim Evidence Checker"
+  short_description: "Check claims against evidence"
+  default_prompt: "Use $claim-evidence-checker to map manuscript claims to evidence and list unsupported or weak claims."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Hybrid Retrieval"
+  short_description: "Retrieve evidence from RAG cards"
+  default_prompt: "Use $hybrid-retrieval to retrieve section evidence from typed RAG cards and write a retrieval trace."
+
+policy:
+  allow_implicit_invocation: true

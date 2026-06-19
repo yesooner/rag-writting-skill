@@ -21,6 +21,12 @@ SCRIPT_PATHS = [
     "skills/article-rag-chunking/scripts/generate_cards.py",
     "skills/article-rag-chunking/scripts/rank_sources.py",
     "skills/article-rag-chunking/scripts/run_rag_pipeline.py",
+    "skills/query-planner/scripts/build_query_plan.py",
+    "skills/hybrid-retrieval/scripts/retrieve_cards.py",
+    "skills/section-writing-router/scripts/route_section_writing.py",
+    "skills/claim-evidence-checker/scripts/check_claim_evidence.py",
+    "scripts/rag_pipeline_lib.py",
+    "scripts/run_writing_rag_pipeline.py",
     "skills/word-formatting/scripts/inspect_docx.py",
     "skills/word-formatting/scripts/format_docx.py",
 ]

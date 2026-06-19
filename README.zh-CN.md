@@ -8,16 +8,20 @@
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-orange"></a>
 </p>
 
-RAG Writing Skill 是一套面向 Claude Code 和 Codex 的通用写作辅助 skill，用于整理论文资料、生成 typed RAG cards、管理资料角色、修复顺序编码制引用，并按用户确认的格式表修改 Word 文档。
+RAG Writing Skill 是一套面向 Claude Code 和 Codex 的通用写作辅助 skill，用于整理论文资料、生成 typed RAG cards、规划章节 query、执行混合检索、检查断言证据映射、修复顺序编码制引用，并按用户确认的格式表修改 Word 文档。
 
 ## 功能概览
 
-本仓库包含 5 个子 skill：
+本仓库包含 9 个子 skill：
 
 ```text
 research-workflow
 article-rag-chunking
 source-role-policy
+query-planner
+hybrid-retrieval
+section-writing-router
+claim-evidence-checker
 citation-registry
 word-formatting
 ```
@@ -28,6 +32,10 @@ word-formatting
 research-workflow
 -> source-role-policy
 -> article-rag-chunking
+-> query-planner
+-> hybrid-retrieval
+-> section-writing-router
+-> claim-evidence-checker
 -> citation-registry
 -> word-formatting（仅在需要处理 .docx 时使用）
 ```
@@ -39,6 +47,10 @@ research-workflow
 ```text
 source-role-policy
 -> article-rag-chunking
+-> query-planner
+-> hybrid-retrieval
+-> section-writing-router
+-> claim-evidence-checker
 -> citation-registry
 -> word-formatting（仅在需要处理 .docx 时使用）
 ```
@@ -51,6 +63,10 @@ source-role-policy
 /rag-writing-skill:research-workflow
 /rag-writing-skill:article-rag-chunking
 /rag-writing-skill:source-role-policy
+/rag-writing-skill:query-planner
+/rag-writing-skill:hybrid-retrieval
+/rag-writing-skill:section-writing-router
+/rag-writing-skill:claim-evidence-checker
 /rag-writing-skill:citation-registry
 /rag-writing-skill:word-formatting
 ```
@@ -69,6 +85,10 @@ Codex 不依赖 Claude Code slash command。可以用自然语言或显式 skill
 use research-workflow
 use article-rag-chunking
 use source-role-policy
+use query-planner
+use hybrid-retrieval
+use section-writing-router
+use claim-evidence-checker
 use citation-registry
 use word-formatting
 ```
@@ -114,6 +134,7 @@ python -X utf8 scripts\verify_release.py --root .
 
 ```text
 <output_root>\research_brief.md
+<output_root>\workflow_state.json
 <output_root>\source_candidates.csv
 <output_root>\evidence_registry.csv
 <output_root>\human_decisions.md
@@ -124,6 +145,12 @@ python -X utf8 scripts\verify_release.py --root .
 报告初稿和最终稿必须使用版本号命名，例如 `report_draft_v1.md`、`report_draft_v2.md`、`final_report_v1.md`，不得覆盖已有版本。用户可见输出默认使用中文；英文论文题名、专利题名、标准号、DOI、机构名、专有名词和必要原文引文可保留原文。
 
 支持论文、综述、专利、标准、规范、指南、法规、技术规格、报告、数据集和网页来源。暂时没有的标准/规范类资料可标记为 `not_searched` 或 `needed_later`，不得编造。
+
+用于论文写作时，`workflow_state.json` 防止跳步：
+
+```text
+query_plan_status -> retrieval_status -> section_draft_status -> claim_check_status -> citation_status
+```
 
 ## article-rag-chunking
 
@@ -198,6 +225,92 @@ python -X utf8 skills\article-rag-chunking\scripts\run_rag_pipeline.py `
   --input-dir "<source-folder>" `
   --output-root "<output_root>" `
   --no-network
+```
+
+## query-planner
+
+用途：把论文任务拆成章节级检索 query。
+
+输出：
+
+```text
+<output_root>\queries\query_plan.json
+```
+
+脚本：
+
+```powershell
+python -X utf8 skills\query-planner\scripts\build_query_plan.py `
+  --output-root "<output_root>" --title "<article title>"
+```
+
+默认章节目的：
+
+```text
+Introduction：背景、研究空白、研究现状
+Method：模型设置、参数依据、标准/规范、公式/指标
+Results：对比、机制解释、破坏模式
+Discussion：局限性、矛盾、工程意义
+```
+
+## hybrid-retrieval
+
+用途：基于 card 执行混合检索，包括 BM25 或关键词检索、可选 dense retrieval、source_class 过滤、content_kind 过滤和章节目的 rerank。
+
+输出：
+
+```text
+<output_root>\retrieval\retrieval_trace.jsonl
+```
+
+脚本：
+
+```powershell
+python -X utf8 skills\hybrid-retrieval\scripts\retrieve_cards.py `
+  --output-root "<output_root>"
+```
+
+## section-writing-router
+
+用途：按论文章节选择不同 RAG 策略。
+
+```text
+Introduction -> A_core + B_background
+Method -> C_method + standard/equation/method cards
+Results -> A_core + result/table/figure cards
+Discussion -> A_core + contradiction + limitation evidence
+```
+
+## claim-evidence-checker
+
+用途：检查每个事实性断言是否有证据 card、source 权限、页码/位置和引用记录支撑。
+
+输出：
+
+```text
+<output_root>\claims\claim_registry.jsonl
+<output_root>\claims\evidence_units.jsonl
+<output_root>\claims\claim_evidence_map.jsonl
+<output_root>\qa\unsupported_claims.csv
+<output_root>\qa\weak_evidence_claims.csv
+<output_root>\qa\citation_mismatch.csv
+```
+
+脚本：
+
+```powershell
+python -X utf8 skills\claim-evidence-checker\scripts\check_claim_evidence.py `
+  --output-root "<output_root>"
+```
+
+检查规则：
+
+```text
+事实性 claim 必须有 source_id
+关键 claim 必须有 page_or_location
+公式 claim 必须有 equation_card 或 C_method source
+结果 claim 必须有 result/table/figure 证据
+D_internal 默认不能作为公开参考文献证据
 ```
 
 ## source-role-policy
@@ -341,6 +454,10 @@ skills/
   research-workflow/
   article-rag-chunking/
   source-role-policy/
+  query-planner/
+  hybrid-retrieval/
+  section-writing-router/
+  claim-evidence-checker/
   citation-registry/
   word-formatting/
 scripts/

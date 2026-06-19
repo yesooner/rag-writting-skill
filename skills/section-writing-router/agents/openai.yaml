@@ -1,0 +1,7 @@
+interface:
+  display_name: "Section Writing Router"
+  short_description: "Route section writing through RAG"
+  default_prompt: "Use $section-writing-router to draft article sections through query planning, retrieval, and claim checking."
+
+policy:
+  allow_implicit_invocation: true

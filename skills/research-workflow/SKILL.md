@@ -21,6 +21,8 @@ human topic definition
 
 This skill coordinates research work. It does not replace `article-rag-chunking`, `source-role-policy`, or `citation-registry`; call those skills when source carding, source-role classification, or formal citation numbering is needed.
 
+For manuscript writing from RAG cards, route through `query-planner`, `hybrid-retrieval`, `section-writing-router`, and `claim-evidence-checker` before final citation work.
+
 ## First Step
 
 Before writing files, ask the user to confirm:
@@ -65,6 +67,7 @@ Do not create many fragmented files by default. Write only these core files unle
 
 ```text
 <output_root>/research_brief.md
+<output_root>/workflow_state.json
 <output_root>/source_candidates.csv
 <output_root>/evidence_registry.csv
 <output_root>/human_decisions.md
@@ -82,6 +85,19 @@ Optional files:
 
 Use optional files only when they reduce ambiguity or preserve important audit information.
 
+For article writing from RAG cards, these additional files are required:
+
+```text
+<output_root>/queries/query_plan.json
+<output_root>/retrieval/retrieval_trace.jsonl
+<output_root>/claims/claim_registry.jsonl
+<output_root>/claims/evidence_units.jsonl
+<output_root>/claims/claim_evidence_map.jsonl
+<output_root>/qa/unsupported_claims.csv
+<output_root>/qa/weak_evidence_claims.csv
+<output_root>/qa/citation_mismatch.csv
+```
+
 Versioned report filenames are required:
 
 ```text
@@ -92,6 +108,27 @@ final_report_v2.md
 ```
 
 Never overwrite an existing report draft or final report. Use the next available version number. Registries and checklists may be updated in place because they represent the current research state.
+
+## Workflow State
+
+Maintain `<output_root>/workflow_state.json` to prevent skipped steps:
+
+```json
+{
+  "output_root": "",
+  "brief_status": "draft|confirmed",
+  "source_screening_status": "not_started|candidate|confirmed",
+  "carding_status": "not_started|ready",
+  "query_plan_status": "not_started|ready",
+  "retrieval_status": "not_started|ready",
+  "section_draft_status": "not_started|drafted",
+  "claim_check_status": "not_started|ready",
+  "citation_status": "not_started|ready",
+  "word_format_status": "not_required|not_started|ready"
+}
+```
+
+Before each module runs, read this file. After each module completes, update only the status fields it owns.
 
 ## Workflow
 
@@ -235,6 +272,9 @@ Write the next available `report_draft_vN.md` only from:
 ```text
 research_brief.md
 evidence_registry.csv
+queries/query_plan.json
+retrieval/retrieval_trace.jsonl
+claims/claim_evidence_map.jsonl
 human_decisions.md
 selected source metadata
 ```
@@ -254,7 +294,9 @@ references or source list
 
 If formal references are required, call `citation-registry`.
 
-Human gate: after generating a draft, ask the user to revise, accept, or request another version. If the user asks for a final version, write the next available `final_report_vN.md` rather than overwriting an earlier file.
+For article sections, use `section-writing-router`; do not draft directly from the candidate table or source list.
+
+Human gate: after generating a draft, run `claim-evidence-checker`, then ask the user to revise, accept, or request another version. If the user asks for a final version, write the next available `final_report_vN.md` rather than overwriting an earlier file.
 
 ### 8. QA
 
@@ -279,4 +321,7 @@ internal/project data is separated from visible references
 - Do not overproduce documents; use the compact output set by default.
 - Do not cite internal files as public references unless the user explicitly permits it.
 - Do not overwrite versioned report files.
+- Do not skip `workflow_state.json`.
+- Do not write article sections from RAG cards before query planning and retrieval.
+- Do not finalize a manuscript before claim-evidence QA.
 - Write user-facing outputs in Chinese by default, except original titles, identifiers, proper nouns, and exact quotations.

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Query Planner"
+  short_description: "Plan section-level RAG queries"
+  default_prompt: "Use $query-planner to turn my article outline into section-level retrieval queries."
+
+policy:
+  allow_implicit_invocation: true

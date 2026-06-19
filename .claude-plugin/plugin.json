@@ -1,13 +1,15 @@
 {
   "name": "rag-writing-skill",
   "version": "1.0.0",
-  "description": "RAG writing skill suite with research workflow, typed chunking, source role policy, citation registry, and Word formatting.",
+  "description": "RAG writing skill suite with research workflow, typed chunking, query planning, hybrid retrieval, claim-evidence QA, citation registry, and Word formatting.",
   "author": {
     "name": "local"
   },
   "keywords": [
     "rag",
     "research",
+    "retrieval",
+    "evidence",
     "writing",
     "citation",
     "docx"

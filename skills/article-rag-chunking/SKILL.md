@@ -119,6 +119,7 @@ For local-only metadata enrichment:
 The controller script writes only under `output_root` and generates:
 
 ```text
+<output_root>\workflow_state.json
 <output_root>\metadata\metadata_raw.jsonl
 <output_root>\metadata\metadata_enriched.jsonl
 <output_root>\cards\*.jsonl
@@ -129,6 +130,14 @@ The controller script writes only under `output_root` and generates:
 ```
 
 The controller script must not write `confirmed_source_ranking.json`; user confirmation is still required.
+
+When card generation is complete, update `workflow_state.json` with:
+
+```json
+{
+  "carding_status": "ready"
+}
+```
 
 ## Manual Script Steps
 
@@ -312,6 +321,7 @@ Every card must include `content_kind` and `retrieval_triggers`. Use `references
 Required output under confirmed `output_root`:
 
 ```text
+<output_root>\workflow_state.json
 <output_root>\cleaned
 <output_root>\metadata
 <output_root>\cards
@@ -347,5 +357,6 @@ Files:
 12. `unclassified` sources must be shown to the user and cannot become confirmed final rankings until classified.
 13. D-class material is not ordinary citeable literature.
 14. Cards must contain `content_kind` and `retrieval_triggers`.
+15. Carding completion must be reflected in `workflow_state.json`.
 
 
