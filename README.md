@@ -1,6 +1,5 @@
 # RAG Writing Skill
 
-[中文说明](README.zh-CN.md)
 
 <p align="center">
   <a href="./README.md"><img alt="Language English" src="https://img.shields.io/badge/Language-English-lightgrey"></a>
