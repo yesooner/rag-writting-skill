@@ -54,7 +54,8 @@ The confirmed form should be converted to JSON with this shape:
     "format_tables": true,
     "superscript_citations": true,
     "protect_formulas": true,
-    "normalize_cjk_latin_spacing": true
+    "normalize_cjk_latin_spacing": true,
+    "remove_unused_styles": true
   },
   "styles": {
     "body": {
@@ -133,6 +134,27 @@ Right: CJK_charloveCJK_char
 
 Wrong: CJK_char 1 CJK_char model
 Right: CJK_char1CJK_charmodel
+
+Wrong: CJK_char UHPC CJK_char
+Right: CJK_charUHPCCJK_char
+
+Wrong: CJK_char 400mm CJK_char
+Right: CJK_char400mmCJK_char
+
+Wrong: CJK_char 400 mm CJK_char
+Right: CJK_char400mmCJK_char
+
+Wrong: 51.6 m CJK_char
+Right: 51.6mCJK_char
+
+Wrong: 1500 × 400 × 3000 mm
+Right: 1500×400×3000mm
+
+Wrong: CJK_char 8 CJK_char
+Right: CJK_char8CJK_char
+
+Wrong: CJK_char 1 CJK_char
+Right: CJK_char1CJK_char
 ```
 
 The formatter should remove only this pattern:
@@ -142,7 +164,11 @@ CJK + spaces + Latin letter/digit
 Latin letter/digit + spaces + CJK
 ```
 
-Do not remove spaces between Latin words.
+This includes technical abbreviations and model names such as `UHPC`, `UHPC-NC`, `RC`, `UJ-1`, `RAW`, `CDP`, `ABAQUS`, and `Cohesive` when they touch Chinese prose. It also includes compact number-unit tokens and dimension expressions when they touch Chinese prose, such as `400mm`, `51.6m`, `40MPa`, and `1500×400×3000mm`.
+
+Do not remove spaces between Latin words. In Chinese body text, remove redundant spaces in number-unit and figure/table-number expressions such as `400 mm even`, `51.6 m high`, `each row 8 bars`, `Figure 1 shows`, and `Table 6 cumulative energy dissipation`.
+
+When a spacing issue spans multiple Word runs, the formatter may rewrite the full paragraph text only if the paragraph has no formulas, drawings, or pictures.
 
 The inspection report must include:
 
@@ -160,9 +186,22 @@ cjk_alnum_spaces_removed
 cjk_latin_spaces_removed
 ```
 
+## Unused Styles
+
+If `features.remove_unused_styles` is true, delete unused custom styles after formatting. Do not delete:
+
+```text
+Word built-in styles
+styles currently used by paragraphs or tables
+styles named in the confirmed config
+Normal
+Default Paragraph Font
+Normal Table
+```
+
 ## Formula Protection
 
 If `features.protect_formulas` is true, compare pre/post hashes of all `m:oMath` and `m:oMathPara` nodes. If the count or hash sequence changes, abort before saving.
 
-Do not rewrite formula XML.
+Do not rewrite formula XML. Paragraph-level spacing normalization must skip paragraphs containing formulas.
 

@@ -72,8 +72,18 @@ The config controls:
 - citation superscripting
 - formula protection
 - CJK-alphanumeric spacing normalization
+- unused custom style removal
 
 No style name is hardcoded as a project-specific requirement. Style names are whatever the confirmed config says.
+
+The default page margins are:
+
+```text
+top 2.5 cm
+bottom 2.5 cm
+left 3.0 cm
+right 2.5 cm
+```
 
 ## CJK-Alphanumeric Spacing
 
@@ -87,6 +97,27 @@ Right: CJK_charloveCJK_char
 
 Wrong: CJK_char 1 CJK_char model
 Right: CJK_char1CJK_charmodel
+
+Wrong: CJK_char UHPC CJK_char
+Right: CJK_charUHPCCJK_char
+
+Wrong: CJK_char 400mm CJK_char
+Right: CJK_char400mmCJK_char
+
+Wrong: CJK_char 400 mm CJK_char
+Right: CJK_char400mmCJK_char
+
+Wrong: 51.6 m CJK_char
+Right: 51.6mCJK_char
+
+Wrong: 1500 × 400 × 3000 mm
+Right: 1500×400×3000mm
+
+Wrong: CJK_char 8 CJK_char
+Right: CJK_char8CJK_char
+
+Wrong: CJK_char 1 CJK_char
+Right: CJK_char1CJK_char
 ```
 
 The formatter must treat spaces matching this pattern as formatting defects:
@@ -95,6 +126,8 @@ The formatter must treat spaces matching this pattern as formatting defects:
 CJK + spaces + Latin letter/digit
 Latin letter/digit + spaces + CJK
 ```
+
+This includes technical abbreviations and model names such as `UHPC`, `UHPC-NC`, `RC`, `UJ-1`, `RAW`, `CDP`, `ABAQUS`, and `Cohesive` when they touch Chinese prose. It also includes compact number-unit tokens and dimension expressions when they touch Chinese prose, such as `400mm`, `51.6m`, `40MPa`, and `1500×400×3000mm`. In Chinese body text, remove redundant spaces in expressions such as `400 mm even`, `51.6 m high`, `each row 8 bars`, `Figure 1 shows`, and `Table 6 cumulative energy dissipation`.
 
 Inspection must report both the new generic fields and the legacy compatibility fields:
 
@@ -116,6 +149,22 @@ Formatting may remove these spaces only when the confirmed config enables:
 ```
 
 When this feature is enabled, the script may remove spaces inside the same Word run. If a spacing issue spans multiple runs and cannot be safely normalized without damaging formatting, report it for manual review instead of silently rewriting the paragraph.
+
+The formatter may normalize text across multiple Word runs only when the paragraph contains no formulas, drawings, or pictures. Paragraphs containing formulas or images must be skipped for spacing rewrite so formula XML and image anchors remain unchanged.
+
+## Unused Styles
+
+When the confirmed config enables:
+
+```json
+{
+  "features": {
+    "remove_unused_styles": true
+  }
+}
+```
+
+delete unused custom styles after formatting. Do not delete Word built-in styles, currently used styles, or configured styles required by the confirmed style table.
 
 ## Format Self-Check System
 
@@ -139,6 +188,7 @@ reference-list number count
 reference-list number superscript count
 CJK-Alphanumeric Spacing issue count
 CJK-Alphanumeric Spacing examples
+unused custom styles removed
 ```
 
 Figure and caption checks:
@@ -159,6 +209,7 @@ Formula checks:
 - Inline and display formulas must remain complete.
 - Formula XML/hash must be checked before and after formatting when `protect_formulas=true`.
 - Abort rather than save if formula XML changes unexpectedly.
+- Spacing cleanup must not rewrite formula XML.
 
 Citation checks:
 
@@ -174,6 +225,7 @@ Citation checks:
 - Preserve formula XML hashes.
 - Abort rather than save if formulas or images are corrupted.
 - Do not superscript reference-list labels unless the confirmed config explicitly asks for it.
+- Remove unused custom styles by default only when `remove_unused_styles=true`.
 
 ## Final Report
 
@@ -191,5 +243,6 @@ After formatting or inspection, report:
 - regular table count
 - CJK-Alphanumeric Spacing issue count and examples
 - CJK-alphanumeric spaces removed, when normalization is enabled
+- unused custom styles removed
 
 

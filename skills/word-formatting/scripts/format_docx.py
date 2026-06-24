@@ -21,6 +21,10 @@ from lxml import etree
 
 DEFAULT_CITATION_PATTERN = r"\[\d+(?:\s*[-\u2013,\uff0c]\s*\d+)*\]"
 CJK_ALNUM_SPACING_PATTERN = re.compile(r"(?<=[\u3400-\u9fff])\s+(?=[A-Za-z0-9])|(?<=[A-Za-z0-9])\s+(?=[\u3400-\u9fff])")
+NUMBER_UNIT_SPACING_PATTERN = re.compile(
+    r"(?<=\d)\s+(?=(?:mm|cm|MPa|kPa|GPa|Pa|kN|N|m|kg|g|t|s|min|h|Hz|%|\u00b0C|\u2103)(?=$|[\s,.;:，。；：、)\]\u3400-\u9fff]))"
+)
+DIMENSION_SIGN_SPACING_PATTERN = re.compile(r"(?<=\d)(?:\s+[×xX]\s*|\s*[×xX]\s+)(?=\d)")
 CJK_LATIN_SPACING_PATTERN = CJK_ALNUM_SPACING_PATTERN
 FONT_ALIASES = {
     "宋体": "SimSun",
@@ -59,6 +63,7 @@ def default_config() -> dict:
             "superscript_citations": True,
             "protect_formulas": True,
             "normalize_cjk_latin_spacing": True,
+            "remove_unused_styles": True,
         },
         "citation_pattern": DEFAULT_CITATION_PATTERN,
         "styles": {
@@ -458,26 +463,53 @@ def normalize_cjk_alnum_spacing_text(text: str) -> str:
 
 
 def normalize_cjk_latin_spacing_text(text: str) -> str:
+    text = normalize_cjk_alnum_spacing_text(text)
+    text = NUMBER_UNIT_SPACING_PATTERN.sub("", text)
+    text = DIMENSION_SIGN_SPACING_PATTERN.sub("×", text)
     return normalize_cjk_alnum_spacing_text(text)
 
 
 def cjk_alnum_spacing_issue_count(text: str) -> int:
-    return len(CJK_ALNUM_SPACING_PATTERN.findall(text or ""))
+    text = text or ""
+    return (
+        len(CJK_ALNUM_SPACING_PATTERN.findall(text))
+        + len(NUMBER_UNIT_SPACING_PATTERN.findall(text))
+        + len(DIMENSION_SIGN_SPACING_PATTERN.findall(text))
+    )
 
 
 def cjk_latin_spacing_issue_count(text: str) -> int:
     return cjk_alnum_spacing_issue_count(text)
 
 
+def paragraph_has_nontext_payload(paragraph) -> bool:
+    return bool(
+        paragraph._p.xpath(".//w:drawing")
+        or paragraph._p.xpath(".//w:pict")
+        or paragraph._p.xpath(".//m:oMath")
+        or paragraph._p.xpath(".//m:oMathPara")
+    )
+
+
+def set_paragraph_text_preserving_first_run(paragraph, text: str) -> None:
+    if not paragraph.runs:
+        paragraph.add_run(text)
+        return
+    paragraph.runs[0].text = text
+    for run in paragraph.runs[1:]:
+        run.text = ""
+
+
 def normalize_cjk_latin_spacing(doc: Document) -> int:
     changed = 0
     for paragraph in iter_all_paragraphs(doc):
-        for run in paragraph.runs:
-            text = run.text or ""
-            normalized = normalize_cjk_latin_spacing_text(text)
-            if normalized != text:
-                changed += cjk_alnum_spacing_issue_count(text)
-                run.text = normalized
+        if paragraph_has_nontext_payload(paragraph):
+            continue
+        text = paragraph.text or ""
+        normalized = normalize_cjk_latin_spacing_text(text)
+        if normalized != text:
+            changed += cjk_alnum_spacing_issue_count(text)
+            set_paragraph_text_preserving_first_run(paragraph, normalized)
     return changed
 
 
@@ -487,6 +519,33 @@ def document_text(doc: Document) -> str:
 
 def normalized_document_text(doc: Document) -> str:
     return "\n".join(normalize_cjk_latin_spacing_text(paragraph.text) for paragraph in doc.paragraphs)
+
+
+def used_style_names(doc: Document) -> set[str]:
+    names = set()
+    for paragraph in iter_all_paragraphs(doc):
+        if paragraph.style is not None:
+            names.add(paragraph.style.name)
+    for table in doc.tables:
+        if table.style is not None:
+            names.add(table.style.name)
+    return names
+
+
+def remove_unused_custom_styles(doc: Document, config: dict) -> list[str]:
+    configured = {spec["name"] for spec in config.get("styles", {}).values() if spec.get("name")}
+    protected = {"Normal", "Default Paragraph Font", "Normal Table"} | configured
+    used = used_style_names(doc)
+    removed = []
+    for doc_style in list(doc.styles):
+        if doc_style.builtin or doc_style.name in protected or doc_style.name in used:
+            continue
+        try:
+            removed.append(doc_style.name)
+            doc_style.delete()
+        except Exception:
+            removed.pop()
+    return removed
 
 
 def make_text_run(text: str, source_run, superscript: bool):
@@ -611,6 +670,7 @@ def format_docx(path: Path, config: dict) -> dict:
     figure_tables, regular_tables = format_tables(doc, styles, config) if config.get("features", {}).get("format_tables", False) else (0, len(doc.tables))
     cjk_latin_spaces_removed = normalize_cjk_latin_spacing(doc) if normalize_spacing_enabled else 0
     citation_marks = superscript_citations(doc, config) if config.get("features", {}).get("superscript_citations", False) else 0
+    unused_styles_removed = remove_unused_custom_styles(doc, config) if config.get("features", {}).get("remove_unused_styles", False) else []
 
     if config.get("features", {}).get("protect_formulas", True) and math_hashes(doc) != initial_math:
         raise RuntimeError("Formula XML changed; aborting without saving.")
@@ -635,6 +695,7 @@ def format_docx(path: Path, config: dict) -> dict:
             "citation_marks_changed": citation_marks,
             "cjk_alnum_spaces_removed": cjk_latin_spaces_removed,
             "cjk_latin_spaces_removed": cjk_latin_spaces_removed,
+            "unused_styles_removed": unused_styles_removed,
         },
     )
 

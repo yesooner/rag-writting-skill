@@ -1,0 +1,119 @@
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+from docx import Document
+from docx.enum.style import WD_STYLE_TYPE
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def run_format_docx(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, "-X", "utf8", str(ROOT / "skills" / "word-formatting" / "scripts" / "format_docx.py"), *args],
+        cwd=ROOT,
+        text=True,
+        encoding="utf-8",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=True,
+    )
+
+
+def load_template(path: Path) -> dict:
+    run_format_docx("--write-template", str(path))
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+class WordFormattingTests(unittest.TestCase):
+    def test_default_template_uses_required_page_margins_and_cleanup_features(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path = Path(tmp) / "config.json"
+            config = load_template(config_path)
+            self.assertEqual(config["page"]["top_cm"], 2.5)
+            self.assertEqual(config["page"]["bottom_cm"], 2.5)
+            self.assertEqual(config["page"]["left_cm"], 3.0)
+            self.assertEqual(config["page"]["right_cm"], 2.5)
+            self.assertTrue(config["features"]["protect_formulas"])
+            self.assertTrue(config["features"]["normalize_cjk_latin_spacing"])
+            self.assertTrue(config["features"]["remove_unused_styles"])
+
+    def test_format_removes_cross_run_technical_term_and_number_unit_spaces(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "mixed.docx"
+            config_path = Path(tmp) / "config.json"
+            config = load_template(config_path)
+            config_path.write_text(json.dumps(config, ensure_ascii=False), encoding="utf-8")
+
+            doc = Document()
+            paragraph = doc.add_paragraph()
+            paragraph.add_run("\u672c\u6587\u7814\u7a76")
+            paragraph.add_run(" UHPC ")
+            paragraph.add_run("\u6e7f\u63a5\u7f1d\u4e0e")
+            paragraph.add_run(" RC ")
+            paragraph.add_run("\u57fa\u51c6\uff0c\u5c3a\u5bf8\u4e3a")
+            paragraph.add_run("1000 mm")
+            paragraph.add_run("\uff0c\u53e6\u6709")
+            paragraph.add_run(" 400mm ")
+            paragraph.add_run("\u8bd5\u4ef6\uff0c\u5f3a\u5ea6\u4e3a")
+            paragraph.add_run("40 MPa")
+            paragraph.add_run("\uff0c\u5899\u9ad8")
+            paragraph.add_run("51.6 m ")
+            paragraph.add_run("\u9ad8\uff0c\u5c3a\u5bf8\u4e3a")
+            paragraph.add_run("1500 \u00d7 400 \u00d7 3000 mm")
+            paragraph.add_run("\uff0c\u6bcf\u6392 8 \u6839\uff0c\u56fe 1 \u6240\u793a\uff0c\u8868 6 \u7d2f\u8ba1\u8017\u80fd")
+            paragraph.add_run("\u3002")
+            doc.save(docx)
+
+            result = run_format_docx("--docx", str(docx), "--config", str(config_path), "--json")
+            report = json.loads(result.stdout)
+            text = Document(docx).paragraphs[0].text
+
+            self.assertIn("UHPC\u6e7f\u63a5\u7f1d", text)
+            self.assertIn("RC\u57fa\u51c6", text)
+            self.assertIn("1000mm", text)
+            self.assertIn("400mm\u8bd5\u4ef6", text)
+            self.assertIn("40MPa", text)
+            self.assertIn("51.6m\u9ad8", text)
+            self.assertIn("1500\u00d7400\u00d73000mm", text)
+            self.assertIn("\u6bcf\u63928\u6839", text)
+            self.assertIn("\u56fe1\u6240\u793a", text)
+            self.assertIn("\u88686\u7d2f\u8ba1\u8017\u80fd", text)
+            self.assertNotIn(" UHPC ", text)
+            self.assertNotIn(" RC ", text)
+            self.assertNotIn(" 400mm ", text)
+            self.assertNotIn("1000 mm", text)
+            self.assertNotIn("40 MPa", text)
+            self.assertNotIn("1500 \u00d7 400 \u00d7 3000 mm", text)
+            self.assertGreaterEqual(report["cjk_alnum_spaces_removed"], 12)
+            self.assertTrue(report["formula_hash_ok"])
+
+    def test_format_removes_unused_custom_styles_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "styles.docx"
+            config_path = Path(tmp) / "config.json"
+            config = load_template(config_path)
+            config_path.write_text(json.dumps(config, ensure_ascii=False), encoding="utf-8")
+
+            doc = Document()
+            doc.styles.add_style("Unused Custom Style", WD_STYLE_TYPE.PARAGRAPH)
+            doc.add_paragraph("\u6b63\u6587 UHPC \u5185\u5bb9\u3002")
+            self.assertIn("Unused Custom Style", {style.name for style in doc.styles})
+            doc.save(docx)
+
+            result = run_format_docx("--docx", str(docx), "--config", str(config_path), "--json")
+            report = json.loads(result.stdout)
+            styles = {style.name for style in Document(docx).styles}
+
+            self.assertNotIn("Unused Custom Style", styles)
+            self.assertIn("Unused Custom Style", report["unused_styles_removed"])
+
+
+if __name__ == "__main__":
+    unittest.main()

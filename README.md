@@ -451,6 +451,7 @@ Supported configuration areas:
 - citation superscripting
 - formula protection
 - CJK-alphanumeric spacing normalization
+- unused custom style removal
 
 Figure and caption rules:
 
@@ -469,14 +470,23 @@ CJK-alphanumeric spacing rules:
 - Do not keep spaces between CJK characters and Latin letters or Arabic digits.
 - `CJK_char love CJK_char` should become `CJK_charloveCJK_char`.
 - `CJK_char 1 CJK_char model` should become `CJK_char1CJK_charmodel`.
+- `CJK_char UHPC CJK_char` should become `CJK_charUHPCCJK_char`.
+- `CJK_char 400mm CJK_char` should become `CJK_char400mmCJK_char`.
+- `400 mm even` should become `400mmeven` in Chinese body text.
+- `51.6 m high` should become `51.6mhigh` in Chinese body text.
+- `1500 × 400 × 3000 mm` should become `1500×400×3000mm`.
+- Figure/table and quantity expressions such as `Figure 1 shows`, `Table 6`, and `each row 8 bars` should be compacted in Chinese body text.
 - The inspection report includes `cjk_alnum_spacing_issue_count`, `cjk_latin_spacing_issue_count`, and examples.
 - The formatter removes these spaces only when the confirmed config enables `normalize_cjk_latin_spacing`.
+- The formatter may normalize across Word runs only in paragraphs without formulas, drawings, or pictures.
 
 Formula protection rules:
 
 - Check formula nodes or formula XML hashes before and after formatting.
 - Abort rather than save if formula or image counts are abnormal.
 - Do not change manuscript text content.
+- Formula XML is not rewritten during spacing cleanup.
+- Unused custom styles are removed by default when `remove_unused_styles=true`; built-in, used, and configured styles are kept.
 
 Common commands:
 
@@ -505,6 +515,7 @@ The final report should include:
 - regular table count
 - CJK-Alphanumeric Spacing issue count and examples
 - CJK-alphanumeric spaces removed, when normalization is enabled
+- unused custom styles removed
 
 ## Directory Layout
 
