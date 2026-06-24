@@ -28,6 +28,11 @@ def default_config() -> dict:
         "patterns": {
             "reference": [r"^\[\d+\]"],
         },
+        "formula": {
+            "output_format": "MathML",
+            "parameter_output_format": "MathML",
+            "body_parameter_output_format": "MathML",
+        },
     }
 
 
@@ -66,6 +71,18 @@ def cjk_alnum_spacing_issue_count(text: str) -> int:
 
 def cjk_latin_spacing_issue_count(text: str) -> int:
     return cjk_alnum_spacing_issue_count(text)
+
+
+def formula_output_format(config: dict) -> str:
+    return str(config.get("formula", {}).get("output_format", "MathML"))
+
+
+def formula_parameter_output_format(config: dict) -> str:
+    return str(config.get("formula", {}).get("parameter_output_format", "MathML"))
+
+
+def body_parameter_output_format(config: dict) -> str:
+    return str(config.get("formula", {}).get("body_parameter_output_format", "MathML"))
 
 
 def inspect_docx(path: Path, config: dict) -> dict:
@@ -145,6 +162,9 @@ def inspect_docx(path: Path, config: dict) -> dict:
         "regular_table_count": regular_tables,
         "image_count": len(doc.inline_shapes),
         "formula_node_count": len(doc._body._element.xpath(".//m:oMath | .//m:oMathPara")),
+        "formula_output_format": formula_output_format(config),
+        "formula_parameter_output_format": formula_parameter_output_format(config),
+        "body_parameter_output_format": body_parameter_output_format(config),
         "missing_configured_styles": [name for name in required_styles if name not in existing_styles],
         "figure_table_count": figure_tables,
         "top_level_image_paragraph_count": sum(

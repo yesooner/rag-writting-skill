@@ -65,6 +65,11 @@ def default_config() -> dict:
             "normalize_cjk_latin_spacing": True,
             "remove_unused_styles": True,
         },
+        "formula": {
+            "output_format": "MathML",
+            "parameter_output_format": "MathML",
+            "body_parameter_output_format": "MathML",
+        },
         "citation_pattern": DEFAULT_CITATION_PATTERN,
         "styles": {
             "title": style("Title", "SimHei", "Times New Roman", 18, True, "center", 1.5, 0, 0, 0),
@@ -134,6 +139,18 @@ def normalize_font(name: str) -> str:
 
 def math_hashes(doc: Document) -> list[str]:
     return [sha256(etree.tostring(node)).hexdigest() for node in doc._body._element.xpath(".//m:oMath | .//m:oMathPara")]
+
+
+def formula_output_format(config: dict) -> str:
+    return str(config.get("formula", {}).get("output_format", "MathML"))
+
+
+def formula_parameter_output_format(config: dict) -> str:
+    return str(config.get("formula", {}).get("parameter_output_format", "MathML"))
+
+
+def body_parameter_output_format(config: dict) -> str:
+    return str(config.get("formula", {}).get("body_parameter_output_format", "MathML"))
 
 
 def compiled_patterns(config: dict, key: str) -> list[re.Pattern]:
@@ -647,6 +664,9 @@ def collect_report(doc: Document, target: Path, backup: Path | None, config: dic
         "reference_number_count": ref_total,
         "reference_number_superscript_count": ref_super,
         "formula_node_count": len(doc._body._element.xpath(".//m:oMath | .//m:oMathPara")),
+        "formula_output_format": formula_output_format(config),
+        "formula_parameter_output_format": formula_parameter_output_format(config),
+        "body_parameter_output_format": body_parameter_output_format(config),
         "formula_hash_ok": formula_hash_ok,
         **extra,
     }

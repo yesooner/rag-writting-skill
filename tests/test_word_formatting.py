@@ -26,6 +26,18 @@ def run_format_docx(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def run_inspect_docx(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, "-X", "utf8", str(ROOT / "skills" / "word-formatting" / "scripts" / "inspect_docx.py"), *args],
+        cwd=ROOT,
+        text=True,
+        encoding="utf-8",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=True,
+    )
+
+
 def load_template(path: Path) -> dict:
     run_format_docx("--write-template", str(path))
     return json.loads(path.read_text(encoding="utf-8"))
@@ -43,6 +55,9 @@ class WordFormattingTests(unittest.TestCase):
             self.assertTrue(config["features"]["protect_formulas"])
             self.assertTrue(config["features"]["normalize_cjk_latin_spacing"])
             self.assertTrue(config["features"]["remove_unused_styles"])
+            self.assertEqual(config["formula"]["output_format"], "MathML")
+            self.assertEqual(config["formula"]["parameter_output_format"], "MathML")
+            self.assertEqual(config["formula"]["body_parameter_output_format"], "MathML")
 
     def test_format_removes_cross_run_technical_term_and_number_unit_spaces(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -93,6 +108,9 @@ class WordFormattingTests(unittest.TestCase):
             self.assertNotIn("1500 \u00d7 400 \u00d7 3000 mm", text)
             self.assertGreaterEqual(report["cjk_alnum_spaces_removed"], 12)
             self.assertTrue(report["formula_hash_ok"])
+            self.assertEqual(report["formula_output_format"], "MathML")
+            self.assertEqual(report["formula_parameter_output_format"], "MathML")
+            self.assertEqual(report["body_parameter_output_format"], "MathML")
 
     def test_format_removes_unused_custom_styles_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -113,6 +131,24 @@ class WordFormattingTests(unittest.TestCase):
 
             self.assertNotIn("Unused Custom Style", styles)
             self.assertIn("Unused Custom Style", report["unused_styles_removed"])
+
+    def test_inspect_reports_mathml_formula_and_body_parameter_output_formats(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "inspect.docx"
+            config_path = Path(tmp) / "config.json"
+            config = load_template(config_path)
+            config_path.write_text(json.dumps(config, ensure_ascii=False), encoding="utf-8")
+
+            doc = Document()
+            doc.add_paragraph("\u6b63\u6587\u53c2\u6570 x \u548c y \u9700\u6309 MathML \u8f93\u51fa\u3002")
+            doc.save(docx)
+
+            result = run_inspect_docx("--docx", str(docx), "--config", str(config_path), "--json")
+            report = json.loads(result.stdout)
+
+            self.assertEqual(report["formula_output_format"], "MathML")
+            self.assertEqual(report["formula_parameter_output_format"], "MathML")
+            self.assertEqual(report["body_parameter_output_format"], "MathML")
 
 
 if __name__ == "__main__":

@@ -57,6 +57,11 @@ The confirmed form should be converted to JSON with this shape:
     "normalize_cjk_latin_spacing": true,
     "remove_unused_styles": true
   },
+  "formula": {
+    "output_format": "MathML",
+    "parameter_output_format": "MathML",
+    "body_parameter_output_format": "MathML"
+  },
   "styles": {
     "body": {
       "name": "Body",
@@ -204,4 +209,30 @@ Normal Table
 If `features.protect_formulas` is true, compare pre/post hashes of all `m:oMath` and `m:oMathPara` nodes. If the count or hash sequence changes, abort before saving.
 
 Do not rewrite formula XML. Paragraph-level spacing normalization must skip paragraphs containing formulas.
+
+## Formula Output
+
+Formula output format must be `MathML`.
+
+Use:
+
+```json
+{
+  "formula": {
+    "output_format": "MathML",
+    "parameter_output_format": "MathML",
+    "body_parameter_output_format": "MathML"
+  }
+}
+```
+
+For `.docx` formatting, Word's internal OMML formula XML is preserved and hash-checked. MathML is the required output format for exported formula content, formula parameter descriptions, inline parameters in body paragraphs, downstream article artifacts, QA reports, and handoff descriptions.
+
+Inspection and formatting reports must include:
+
+```text
+formula_output_format
+formula_parameter_output_format
+body_parameter_output_format
+```
 

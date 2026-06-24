@@ -71,6 +71,7 @@ The config controls:
 - table formatting
 - citation superscripting
 - formula protection
+- formula output format
 - CJK-alphanumeric spacing normalization
 - unused custom style removal
 
@@ -166,6 +167,32 @@ When the confirmed config enables:
 
 delete unused custom styles after formatting. Do not delete Word built-in styles, currently used styles, or configured styles required by the confirmed style table.
 
+## Formula Output
+
+The required formula output format is `MathML`.
+
+Use this config shape:
+
+```json
+{
+  "formula": {
+    "output_format": "MathML",
+    "parameter_output_format": "MathML",
+    "body_parameter_output_format": "MathML"
+  }
+}
+```
+
+For `.docx` formatting, do not convert or rewrite Word's internal OMML formula XML in place. Treat MathML as the required formula format for exported formula content, formula parameter descriptions, inline parameters in body paragraphs, downstream article artifacts, QA reports, and handoff descriptions.
+
+The formatting and inspection reports must include:
+
+```text
+formula_output_format: MathML
+formula_parameter_output_format: MathML
+body_parameter_output_format: MathML
+```
+
 ## Format Self-Check System
 
 Before changing a `.docx`, inspect and report the current state. After changing a `.docx`, inspect again and compare.
@@ -180,6 +207,9 @@ figure-table count
 top-level loose image paragraph count
 regular table count
 formula node count
+formula output format
+formula parameter output format
+body parameter output format
 formula XML/hash status
 body citation count
 body citation superscript count
@@ -207,6 +237,8 @@ Table checks:
 Formula checks:
 
 - Inline and display formulas must remain complete.
+- Formula output format must be reported as `MathML`.
+- Formula parameter descriptions and inline parameters in body paragraphs must be reported as `MathML` output.
 - Formula XML/hash must be checked before and after formatting when `protect_formulas=true`.
 - Abort rather than save if formula XML changes unexpectedly.
 - Spacing cleanup must not rewrite formula XML.
@@ -240,6 +272,9 @@ After formatting or inspection, report:
 - in-text citation count and superscript count
 - reference-list number superscript count
 - formula node count and hash status
+- formula output format
+- formula parameter output format
+- body parameter output format
 - regular table count
 - CJK-Alphanumeric Spacing issue count and examples
 - CJK-alphanumeric spaces removed, when normalization is enabled

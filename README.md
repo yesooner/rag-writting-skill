@@ -450,6 +450,7 @@ Supported configuration areas:
 - table formatting
 - citation superscripting
 - formula protection
+- formula and parameter output format
 - CJK-alphanumeric spacing normalization
 - unused custom style removal
 
@@ -485,6 +486,8 @@ Formula protection rules:
 - Check formula nodes or formula XML hashes before and after formatting.
 - Abort rather than save if formula or image counts are abnormal.
 - Do not change manuscript text content.
+- Formula output format is `MathML`.
+- Formula parameter descriptions and inline parameters in body paragraphs also use `MathML` as the required output format.
 - Formula XML is not rewritten during spacing cleanup.
 - Unused custom styles are removed by default when `remove_unused_styles=true`; built-in, used, and configured styles are kept.
 
@@ -512,6 +515,9 @@ The final report should include:
 - in-text citation count and superscript count
 - reference-list number superscript count
 - formula node count and hash status
+- formula output format
+- formula parameter output format
+- body parameter output format
 - regular table count
 - CJK-Alphanumeric Spacing issue count and examples
 - CJK-alphanumeric spaces removed, when normalization is enabled
