@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 from docx import Document
+from docx.oxml.ns import qn
 
 
 DEFAULT_CITATION_PATTERN = r"\[\d+(?:\s*[-\u2013,\uff0c]\s*\d+)*\]"
@@ -83,6 +84,45 @@ def formula_parameter_output_format(config: dict) -> str:
 
 def body_parameter_output_format(config: dict) -> str:
     return str(config.get("formula", {}).get("body_parameter_output_format", "MathML"))
+
+
+def child_val(element, path: str) -> str | None:
+    found = element.xpath(path)
+    if not found:
+        return None
+    return found[0].get(qn("w:val"))
+
+
+def expected_on_off(value: bool) -> str:
+    return "1" if value else "0"
+
+
+def style_office_metadata_issues(doc: Document, config: dict) -> list[dict]:
+    issues = []
+    existing_styles = {style.name: style for style in doc.styles}
+    required_typography = ["size_pt", "line_spacing", "alignment"]
+    for role, spec in config.get("styles", {}).items():
+        name = spec.get("name")
+        if not name:
+            continue
+        missing_fields = [field for field in required_typography if spec.get(field) is None]
+        if missing_fields:
+            issues.append({"role": role, "style": name, "missing_config_fields": missing_fields})
+        doc_style = existing_styles.get(name)
+        if doc_style is None:
+            continue
+        element = doc_style.element
+        if "q_format" in spec and child_val(element, "./w:qFormat") != expected_on_off(bool(spec.get("q_format"))):
+            issues.append({"role": role, "style": name, "missing_or_mismatched": "qFormat"})
+        if spec.get("ui_priority") is not None and child_val(element, "./w:uiPriority") != str(int(spec["ui_priority"])):
+            issues.append({"role": role, "style": name, "missing_or_mismatched": "uiPriority"})
+        if spec.get("outline_level") is not None and child_val(element, "./w:pPr/w:outlineLvl") != str(int(spec["outline_level"])):
+            issues.append({"role": role, "style": name, "missing_or_mismatched": "outlineLvl"})
+        if "keep_next" in spec and child_val(element, "./w:pPr/w:keepNext") != expected_on_off(bool(spec.get("keep_next"))):
+            issues.append({"role": role, "style": name, "missing_or_mismatched": "keepNext"})
+        if "keep_lines" in spec and child_val(element, "./w:pPr/w:keepLines") != expected_on_off(bool(spec.get("keep_lines"))):
+            issues.append({"role": role, "style": name, "missing_or_mismatched": "keepLines"})
+    return issues
 
 
 def inspect_docx(path: Path, config: dict) -> dict:
@@ -165,6 +205,7 @@ def inspect_docx(path: Path, config: dict) -> dict:
         "formula_output_format": formula_output_format(config),
         "formula_parameter_output_format": formula_parameter_output_format(config),
         "body_parameter_output_format": body_parameter_output_format(config),
+        "style_office_metadata_issues": style_office_metadata_issues(doc, config),
         "missing_configured_styles": [name for name in required_styles if name not in existing_styles],
         "figure_table_count": figure_tables,
         "top_level_image_paragraph_count": sum(

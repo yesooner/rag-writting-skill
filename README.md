@@ -445,6 +445,7 @@ Supported configuration areas:
 - page setup
 - header/footer
 - style names and typography
+- Office style metadata
 - paragraph classification patterns
 - figure wrapping
 - table formatting
@@ -465,6 +466,14 @@ Citation superscript rules:
 
 - In-text markers such as `[3]` may be superscripted by configuration.
 - Reference-list labels such as `[3]` are not superscripted by default unless explicitly configured.
+
+Office style metadata rules:
+
+- Every configured style must explicitly set `size_pt`, `line_spacing`, and `alignment`.
+- Every configured style must define `q_format`, `ui_priority`, `keep_next`, and `keep_lines`.
+- H1/H2/H3 must define `outline_level` as `0/1/2`.
+- The formatter writes these fields to `w:qFormat`, `w:uiPriority`, `w:pPr/w:outlineLvl`, `w:pPr/w:keepNext`, and `w:pPr/w:keepLines`.
+- The report includes `style_office_metadata_issues`.
 
 CJK-alphanumeric spacing rules:
 
@@ -509,6 +518,7 @@ The final report should include:
 - target file path
 - backup file path
 - style completeness
+- Office style metadata issues
 - image count
 - figure-table count
 - top-level loose image paragraph count

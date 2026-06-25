@@ -73,7 +73,29 @@ The confirmed form should be converted to JSON with this shape:
       "line_spacing": 1.5,
       "space_before_pt": 0,
       "space_after_pt": 0,
-      "first_line_indent_pt": 24
+      "first_line_indent_pt": 24,
+      "q_format": true,
+      "ui_priority": 50,
+      "outline_level": null,
+      "keep_next": false,
+      "keep_lines": true
+    },
+    "h1": {
+      "name": "H1",
+      "font_cn": "SimHei",
+      "font_en": "Times New Roman",
+      "size_pt": 14,
+      "bold": true,
+      "alignment": "left",
+      "line_spacing": 1.5,
+      "space_before_pt": 0,
+      "space_after_pt": 0,
+      "first_line_indent_pt": 0,
+      "q_format": true,
+      "ui_priority": 10,
+      "outline_level": 0,
+      "keep_next": true,
+      "keep_lines": true
     }
   },
   "patterns": {
@@ -86,6 +108,40 @@ The confirmed form should be converted to JSON with this shape:
   }
 }
 ```
+
+## Office Style Metadata
+
+Every configured paragraph style must explicitly define:
+
+```text
+size_pt
+line_spacing
+alignment
+q_format
+ui_priority
+keep_next
+keep_lines
+```
+
+Heading styles must also define:
+
+```text
+h1 outline_level=0
+h2 outline_level=1
+h3 outline_level=2
+```
+
+The formatter must write these values into Word style XML:
+
+```text
+w:qFormat
+w:uiPriority
+w:pPr/w:outlineLvl
+w:pPr/w:keepNext
+w:pPr/w:keepLines
+```
+
+Inspection and formatting reports must include `style_office_metadata_issues`.
 
 ## Figures
 

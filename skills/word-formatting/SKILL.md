@@ -66,6 +66,7 @@ The config controls:
 - page setup
 - header/footer
 - style names and typography
+- Office style metadata
 - paragraph classification patterns
 - figure wrapping
 - table formatting
@@ -85,6 +86,47 @@ bottom 2.5 cm
 left 3.0 cm
 right 2.5 cm
 ```
+
+## Office Style Metadata
+
+Every configured paragraph style must explicitly define typography and Office style metadata.
+
+Required typography fields:
+
+```text
+size_pt
+line_spacing
+alignment
+```
+
+Required Office metadata fields:
+
+```text
+q_format
+ui_priority
+keep_next
+keep_lines
+```
+
+Heading styles must also define outline levels:
+
+```text
+h1 outline_level=0
+h2 outline_level=1
+h3 outline_level=2
+```
+
+The formatter must write these values into Word style XML:
+
+```text
+w:qFormat
+w:uiPriority
+w:pPr/w:outlineLvl
+w:pPr/w:keepNext
+w:pPr/w:keepLines
+```
+
+The formatting and inspection reports must include `style_office_metadata_issues`. A clean document should report an empty list.
 
 ## CJK-Alphanumeric Spacing
 
@@ -201,6 +243,7 @@ Required checks:
 
 ```text
 style completeness
+Office style metadata issues
 paragraph classification coverage
 image count
 figure-table count
@@ -234,6 +277,14 @@ Table checks:
 - Table body font size and alignment must be checked.
 - Header-row bolding or other table conventions must be controlled by config.
 
+Style metadata checks:
+
+- `qFormat` must be present according to the confirmed config.
+- `uiPriority` must match the confirmed config.
+- Heading outline levels must be `0/1/2` for H1/H2/H3.
+- `keepNext` and `keepLines` must match the confirmed config.
+- Size, line spacing, and alignment must be explicit in every configured style.
+
 Formula checks:
 
 - Inline and display formulas must remain complete.
@@ -266,6 +317,7 @@ After formatting or inspection, report:
 - target path
 - backup path when formatting
 - style completeness
+- Office style metadata issues
 - image count
 - figure-table count
 - top-level loose image paragraph count

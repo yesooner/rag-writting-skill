@@ -72,21 +72,21 @@ def default_config() -> dict:
         },
         "citation_pattern": DEFAULT_CITATION_PATTERN,
         "styles": {
-            "title": style("Title", "SimHei", "Times New Roman", 18, True, "center", 1.5, 0, 0, 0),
-            "subtitle": style("Subtitle", "SimSun", "Times New Roman", 14, True, "center", 1.15, 0, 18, 0),
-            "abstract_head": style("Abstract Heading", "SimHei", "Times New Roman", 10.5, True, "left", 1.0, 0, 0, 0),
-            "abstract_body": style("Abstract Body", "SimSun", "Times New Roman", 10.5, False, "justify", 1.5, 0, 0, 21),
-            "keywords": style("Keywords", "SimSun", "Times New Roman", 10.5, False, "left", 1.0, 0, 0, 0),
-            "h1": style("Heading 1 Custom", "SimHei", "Times New Roman", 14, True, "left", 1.5, 0, 0, 0),
-            "h2": style("Heading 2 Custom", "SimSun", "Times New Roman", 12, False, "left", 1.5, 0, 0, 0),
-            "h3": style("Heading 3 Custom", "SimSun", "Times New Roman", 12, False, "left", 1.5, 0, 0, 0),
-            "body": style("Body Text Custom", "SimSun", "Times New Roman", 12, False, "justify", 1.5, 0, 0, 24),
-            "figure": style("Figure", "SimSun", "Times New Roman", 12, False, "center", 1.0, 0, 0, 0),
-            "figure_caption": style("Figure Caption", "SimSun", "Times New Roman", 10.5, True, "center", 1.0, 0, 0, 0),
-            "table_caption": style("Table Caption", "SimSun", "Times New Roman", 10.5, True, "center", 1.0, 0, 0, 0),
-            "table_text": style("Table Text", "SimSun", "Times New Roman", 10.5, False, "center", 1.0, 0, 0, 0),
-            "reference": style("Reference Text", "SimSun", "Times New Roman", 10.5, False, "justify", 1.0, 0, 0, 0, hanging_indent_pt=21),
-            "formula": style("Formula", "SimSun", "Times New Roman", 12, False, "center", 1.0, 3, 3, 0),
+            "title": style("Title", "SimHei", "Times New Roman", 18, True, "center", 1.5, 0, 0, 0, ui_priority=1, keep_next=True, keep_lines=True),
+            "subtitle": style("Subtitle", "SimSun", "Times New Roman", 14, True, "center", 1.15, 0, 18, 0, ui_priority=2, keep_next=True, keep_lines=True),
+            "abstract_head": style("Abstract Heading", "SimHei", "Times New Roman", 10.5, True, "left", 1.0, 0, 0, 0, ui_priority=15, keep_next=True, keep_lines=True),
+            "abstract_body": style("Abstract Body", "SimSun", "Times New Roman", 10.5, False, "justify", 1.5, 0, 0, 21, ui_priority=16, keep_lines=True),
+            "keywords": style("Keywords", "SimSun", "Times New Roman", 10.5, False, "left", 1.0, 0, 0, 0, ui_priority=17, keep_lines=True),
+            "h1": style("Heading 1 Custom", "SimHei", "Times New Roman", 14, True, "left", 1.5, 0, 0, 0, ui_priority=10, outline_level=0, keep_next=True, keep_lines=True),
+            "h2": style("Heading 2 Custom", "SimSun", "Times New Roman", 12, False, "left", 1.5, 0, 0, 0, ui_priority=20, outline_level=1, keep_next=True, keep_lines=True),
+            "h3": style("Heading 3 Custom", "SimSun", "Times New Roman", 12, False, "left", 1.5, 0, 0, 0, ui_priority=30, outline_level=2, keep_next=True, keep_lines=True),
+            "body": style("Body Text Custom", "SimSun", "Times New Roman", 12, False, "justify", 1.5, 0, 0, 24, ui_priority=50, keep_lines=True),
+            "figure": style("Figure", "SimSun", "Times New Roman", 12, False, "center", 1.0, 0, 0, 0, ui_priority=60, keep_lines=True),
+            "figure_caption": style("Figure Caption", "SimSun", "Times New Roman", 10.5, True, "center", 1.0, 0, 0, 0, ui_priority=61, keep_lines=True),
+            "table_caption": style("Table Caption", "SimSun", "Times New Roman", 10.5, True, "center", 1.0, 0, 0, 0, ui_priority=62, keep_lines=True),
+            "table_text": style("Table Text", "SimSun", "Times New Roman", 10.5, False, "center", 1.0, 0, 0, 0, ui_priority=63, keep_lines=True),
+            "reference": style("Reference Text", "SimSun", "Times New Roman", 10.5, False, "justify", 1.0, 0, 0, 0, hanging_indent_pt=21, ui_priority=70, keep_lines=True),
+            "formula": style("Formula", "SimSun", "Times New Roman", 12, False, "center", 1.0, 3, 3, 0, ui_priority=80, keep_lines=True),
         },
         "patterns": {
             "figure_caption": [r"^图\s*\d+", r"^Figure\s+\d+\s+(?!shows\b)"],
@@ -113,6 +113,11 @@ def style(
     space_after_pt: float,
     first_line_indent_pt: float,
     hanging_indent_pt: float | None = None,
+    q_format: bool = True,
+    ui_priority: int | None = None,
+    outline_level: int | None = None,
+    keep_next: bool = False,
+    keep_lines: bool = False,
 ) -> dict:
     return {
         "name": name,
@@ -126,6 +131,11 @@ def style(
         "space_after_pt": space_after_pt,
         "first_line_indent_pt": first_line_indent_pt,
         "hanging_indent_pt": hanging_indent_pt,
+        "q_format": q_format,
+        "ui_priority": ui_priority,
+        "outline_level": outline_level,
+        "keep_next": keep_next,
+        "keep_lines": keep_lines,
     }
 
 
@@ -151,6 +161,45 @@ def formula_parameter_output_format(config: dict) -> str:
 
 def body_parameter_output_format(config: dict) -> str:
     return str(config.get("formula", {}).get("body_parameter_output_format", "MathML"))
+
+
+def child_val(element, path: str) -> str | None:
+    found = element.xpath(path)
+    if not found:
+        return None
+    return found[0].get(qn("w:val"))
+
+
+def expected_on_off(value: bool) -> str:
+    return "1" if value else "0"
+
+
+def style_office_metadata_issues(doc: Document, config: dict) -> list[dict]:
+    issues = []
+    existing_styles = {style.name: style for style in doc.styles}
+    required_typography = ["size_pt", "line_spacing", "alignment"]
+    for role, spec in config.get("styles", {}).items():
+        name = spec.get("name")
+        if not name:
+            continue
+        missing_fields = [field for field in required_typography if spec.get(field) is None]
+        if missing_fields:
+            issues.append({"role": role, "style": name, "missing_config_fields": missing_fields})
+        doc_style = existing_styles.get(name)
+        if doc_style is None:
+            continue
+        element = doc_style.element
+        if "q_format" in spec and child_val(element, "./w:qFormat") != expected_on_off(bool(spec.get("q_format"))):
+            issues.append({"role": role, "style": name, "missing_or_mismatched": "qFormat"})
+        if spec.get("ui_priority") is not None and child_val(element, "./w:uiPriority") != str(int(spec["ui_priority"])):
+            issues.append({"role": role, "style": name, "missing_or_mismatched": "uiPriority"})
+        if spec.get("outline_level") is not None and child_val(element, "./w:pPr/w:outlineLvl") != str(int(spec["outline_level"])):
+            issues.append({"role": role, "style": name, "missing_or_mismatched": "outlineLvl"})
+        if "keep_next" in spec and child_val(element, "./w:pPr/w:keepNext") != expected_on_off(bool(spec.get("keep_next"))):
+            issues.append({"role": role, "style": name, "missing_or_mismatched": "keepNext"})
+        if "keep_lines" in spec and child_val(element, "./w:pPr/w:keepLines") != expected_on_off(bool(spec.get("keep_lines"))):
+            issues.append({"role": role, "style": name, "missing_or_mismatched": "keepLines"})
+    return issues
 
 
 def compiled_patterns(config: dict, key: str) -> list[re.Pattern]:
@@ -179,6 +228,41 @@ def ensure_rfonts(run, font_cn: str, font_en: str) -> None:
     ensure_rfonts_on_rpr(run._element.get_or_add_rPr(), font_cn, font_en)
 
 
+def get_or_add_child(element, tag: str):
+    found = element.xpath(f"./{tag}")
+    if found:
+        return found[0]
+    child = OxmlElement(tag)
+    element.append(child)
+    return child
+
+
+def set_on_off_child(parent, tag: str, value: bool) -> None:
+    child = get_or_add_child(parent, tag)
+    child.set(qn("w:val"), "1" if value else "0")
+
+
+def set_val_child(parent, tag: str, value) -> None:
+    child = get_or_add_child(parent, tag)
+    child.set(qn("w:val"), str(value))
+
+
+def apply_style_office_metadata(doc_style, spec: dict) -> None:
+    element = doc_style.element
+    if "q_format" in spec:
+        set_on_off_child(element, "w:qFormat", bool(spec.get("q_format")))
+    if spec.get("ui_priority") is not None:
+        set_val_child(element, "w:uiPriority", int(spec["ui_priority"]))
+
+    ppr = get_or_add_child(element, "w:pPr")
+    if spec.get("outline_level") is not None:
+        set_val_child(ppr, "w:outlineLvl", int(spec["outline_level"]))
+    if "keep_next" in spec:
+        set_on_off_child(ppr, "w:keepNext", bool(spec.get("keep_next")))
+    if "keep_lines" in spec:
+        set_on_off_child(ppr, "w:keepLines", bool(spec.get("keep_lines")))
+
+
 def create_styles(doc: Document, config: dict) -> dict[str, object]:
     styles = {}
     for role, spec in config.get("styles", {}).items():
@@ -196,6 +280,7 @@ def create_styles(doc: Document, config: dict) -> dict[str, object]:
         doc_style.font.bold = bool(spec.get("bold", False))
         ensure_rfonts_on_rpr(doc_style.element.get_or_add_rPr(), font_cn, font_en)
         apply_paragraph_format(doc_style.paragraph_format, spec)
+        apply_style_office_metadata(doc_style, spec)
         styles[role] = doc_style
     return styles
 
@@ -668,6 +753,7 @@ def collect_report(doc: Document, target: Path, backup: Path | None, config: dic
         "formula_parameter_output_format": formula_parameter_output_format(config),
         "body_parameter_output_format": body_parameter_output_format(config),
         "formula_hash_ok": formula_hash_ok,
+        "style_office_metadata_issues": style_office_metadata_issues(doc, config),
         **extra,
     }
 

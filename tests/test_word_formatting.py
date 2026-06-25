@@ -9,6 +9,7 @@ from pathlib import Path
 
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
+from docx.oxml.ns import qn
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,6 +59,13 @@ class WordFormattingTests(unittest.TestCase):
             self.assertEqual(config["formula"]["output_format"], "MathML")
             self.assertEqual(config["formula"]["parameter_output_format"], "MathML")
             self.assertEqual(config["formula"]["body_parameter_output_format"], "MathML")
+            self.assertTrue(config["styles"]["h1"]["q_format"])
+            self.assertEqual(config["styles"]["h1"]["outline_level"], 0)
+            self.assertEqual(config["styles"]["h2"]["outline_level"], 1)
+            self.assertEqual(config["styles"]["h3"]["outline_level"], 2)
+            self.assertEqual(config["styles"]["h1"]["ui_priority"], 10)
+            self.assertTrue(config["styles"]["h1"]["keep_next"])
+            self.assertTrue(config["styles"]["h1"]["keep_lines"])
 
     def test_format_removes_cross_run_technical_term_and_number_unit_spaces(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -149,6 +157,36 @@ class WordFormattingTests(unittest.TestCase):
             self.assertEqual(report["formula_output_format"], "MathML")
             self.assertEqual(report["formula_parameter_output_format"], "MathML")
             self.assertEqual(report["body_parameter_output_format"], "MathML")
+
+    def test_format_writes_office_style_metadata_for_headings(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "metadata.docx"
+            config_path = Path(tmp) / "config.json"
+            config = load_template(config_path)
+            config_path.write_text(json.dumps(config, ensure_ascii=False), encoding="utf-8")
+
+            doc = Document()
+            doc.add_paragraph("Title")
+            doc.add_paragraph("1 Introduction")
+            doc.add_paragraph("1.1 Background")
+            doc.add_paragraph("1.1.1 Scope")
+            doc.save(docx)
+
+            result = run_format_docx("--docx", str(docx), "--config", str(config_path), "--json")
+            report = json.loads(result.stdout)
+            formatted = Document(docx)
+            h1 = formatted.styles[config["styles"]["h1"]["name"]]
+            h2 = formatted.styles[config["styles"]["h2"]["name"]]
+            h3 = formatted.styles[config["styles"]["h3"]["name"]]
+
+            self.assertEqual(h1.element.xpath("./w:qFormat")[0].get(qn("w:val")), "1")
+            self.assertEqual(h1.element.xpath("./w:uiPriority")[0].get(qn("w:val")), "10")
+            self.assertEqual(h1.element.xpath("./w:pPr/w:outlineLvl")[0].get(qn("w:val")), "0")
+            self.assertEqual(h1.element.xpath("./w:pPr/w:keepNext")[0].get(qn("w:val")), "1")
+            self.assertEqual(h1.element.xpath("./w:pPr/w:keepLines")[0].get(qn("w:val")), "1")
+            self.assertEqual(h2.element.xpath("./w:pPr/w:outlineLvl")[0].get(qn("w:val")), "1")
+            self.assertEqual(h3.element.xpath("./w:pPr/w:outlineLvl")[0].get(qn("w:val")), "2")
+            self.assertEqual(report["style_office_metadata_issues"], [])
 
 
 if __name__ == "__main__":
