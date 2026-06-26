@@ -448,6 +448,7 @@ Supported configuration areas:
 - Office style metadata
 - paragraph classification patterns
 - figure wrapping
+- figure table image sizing
 - table formatting
 - citation superscripting
 - formula protection
@@ -461,6 +462,9 @@ Figure and caption rules:
 - The first row contains the figure.
 - The second row contains the caption.
 - Caption font size is controlled by the confirmed style table.
+- Figure-table images use a consistent configured width; the default is `7.7 cm`.
+- Aspect ratio is preserved by default.
+- Reports include `figure_table_image_widths_cm`.
 
 Citation superscript rules:
 
@@ -521,6 +525,7 @@ The final report should include:
 - Office style metadata issues
 - image count
 - figure-table count
+- figure-table image widths
 - top-level loose image paragraph count
 - in-text citation count and superscript count
 - reference-list number superscript count

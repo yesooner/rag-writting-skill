@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import base64
 import subprocess
 import sys
 import tempfile
@@ -10,9 +11,11 @@ from pathlib import Path
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml.ns import qn
+from docx.shared import Cm
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PNG_1X1 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
 
 
 def run_format_docx(*args: str) -> subprocess.CompletedProcess[str]:
@@ -59,6 +62,8 @@ class WordFormattingTests(unittest.TestCase):
             self.assertEqual(config["formula"]["output_format"], "MathML")
             self.assertEqual(config["formula"]["parameter_output_format"], "MathML")
             self.assertEqual(config["formula"]["body_parameter_output_format"], "MathML")
+            self.assertEqual(config["figures"]["table_image_width_cm"], 7.7)
+            self.assertTrue(config["figures"]["preserve_aspect_ratio"])
             self.assertTrue(config["styles"]["h1"]["q_format"])
             self.assertEqual(config["styles"]["h1"]["outline_level"], 0)
             self.assertEqual(config["styles"]["h2"]["outline_level"], 1)
@@ -187,6 +192,30 @@ class WordFormattingTests(unittest.TestCase):
             self.assertEqual(h2.element.xpath("./w:pPr/w:outlineLvl")[0].get(qn("w:val")), "1")
             self.assertEqual(h3.element.xpath("./w:pPr/w:outlineLvl")[0].get(qn("w:val")), "2")
             self.assertEqual(report["style_office_metadata_issues"], [])
+
+    def test_format_sets_figure_table_image_width_to_7_7_cm(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "figure-width.docx"
+            image = Path(tmp) / "image.png"
+            config_path = Path(tmp) / "config.json"
+            config = load_template(config_path)
+            config_path.write_text(json.dumps(config, ensure_ascii=False), encoding="utf-8")
+            image.write_bytes(base64.b64decode(PNG_1X1))
+
+            doc = Document()
+            table = doc.add_table(rows=2, cols=1)
+            table.cell(0, 0).paragraphs[0].add_run().add_picture(str(image), width=Cm(3.0))
+            table.cell(1, 0).text = "Figure 1 Test image"
+            doc.save(docx)
+
+            result = run_format_docx("--docx", str(docx), "--config", str(config_path), "--json")
+            report = json.loads(result.stdout)
+            formatted = Document(docx)
+            inline = formatted.tables[0].cell(0, 0)._tc.xpath(".//wp:inline")[0]
+            width_cm = round(int(inline.xpath("./wp:extent")[0].get("cx")) / int(Cm(1)), 2)
+
+            self.assertEqual(width_cm, 7.7)
+            self.assertEqual(report["figure_table_image_widths_cm"], [7.7])
 
 
 if __name__ == "__main__":

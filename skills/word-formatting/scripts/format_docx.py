@@ -38,6 +38,7 @@ ALIGNMENT = {
     "right": WD_ALIGN_PARAGRAPH.RIGHT,
     "justify": WD_ALIGN_PARAGRAPH.JUSTIFY,
 }
+EMU_PER_CM = int(Cm(1))
 
 
 def default_config() -> dict:
@@ -69,6 +70,10 @@ def default_config() -> dict:
             "output_format": "MathML",
             "parameter_output_format": "MathML",
             "body_parameter_output_format": "MathML",
+        },
+        "figures": {
+            "table_image_width_cm": 7.7,
+            "preserve_aspect_ratio": True,
         },
         "citation_pattern": DEFAULT_CITATION_PATTERN,
         "styles": {
@@ -479,6 +484,47 @@ def compiled_patterns(config: dict, role: str) -> list[re.Pattern]:
     return [re.compile(pattern) for pattern in config.get("patterns", {}).get(role, [])]
 
 
+def resize_inline_images_in_cell(cell, config: dict) -> int:
+    figures = config.get("figures", {})
+    width_cm = figures.get("table_image_width_cm")
+    if width_cm is None:
+        return 0
+    preserve_aspect_ratio = figures.get("preserve_aspect_ratio", True)
+    target_width = int(Cm(float(width_cm)))
+    resized = 0
+    for inline in cell._tc.xpath(".//wp:inline"):
+        extents = inline.xpath("./wp:extent")
+        if not extents:
+            continue
+        extent = extents[0]
+        old_width = int(extent.get("cx", "0"))
+        old_height = int(extent.get("cy", "0"))
+        extent.set("cx", str(target_width))
+        if preserve_aspect_ratio and old_width > 0 and old_height > 0:
+            extent.set("cy", str(round(target_width * old_height / old_width)))
+        resized += 1
+    return resized
+
+
+def figure_table_image_widths_cm(doc: Document) -> list[float]:
+    widths = []
+    for table in doc.tables:
+        is_figure_table = (
+            len(table.rows) == 2
+            and len(table.columns) == 1
+            and bool(table.cell(0, 0)._tc.xpath(".//w:drawing") or table.cell(0, 0)._tc.xpath(".//w:pict"))
+        )
+        if not is_figure_table:
+            continue
+        for inline in table.cell(0, 0)._tc.xpath(".//wp:inline"):
+            extents = inline.xpath("./wp:extent")
+            if not extents:
+                continue
+            width = int(extents[0].get("cx", "0"))
+            widths.append(round(width / EMU_PER_CM, 2))
+    return widths
+
+
 def wrap_figures(doc: Document, styles: dict[str, object], config: dict) -> int:
     body = doc._body._element
     pairs = []
@@ -523,6 +569,7 @@ def format_tables(doc: Document, styles: dict[str, object], config: dict) -> tup
             for cell in table._cells:
                 cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
                 set_cell_margins(cell, "0")
+            resize_inline_images_in_cell(table.cell(0, 0), config)
             for paragraph in table.cell(0, 0).paragraphs:
                 apply_style(paragraph, styles, config, "figure")
             for paragraph in table.cell(1, 0).paragraphs:
@@ -743,6 +790,7 @@ def collect_report(doc: Document, target: Path, backup: Path | None, config: dic
         "table_count": len(doc.tables),
         "image_count": len(doc.inline_shapes),
         "figure_table_count": figure_tables,
+        "figure_table_image_widths_cm": figure_table_image_widths_cm(doc),
         "top_level_image_paragraph_count": sum(1 for p in doc.paragraphs if p._p.xpath(".//w:drawing") or p._p.xpath(".//w:pict")),
         "body_citation_count": body_total,
         "body_citation_superscript_count": body_super,

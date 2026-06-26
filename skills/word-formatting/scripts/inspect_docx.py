@@ -6,12 +6,14 @@ import re
 from pathlib import Path
 
 from docx import Document
+from docx.shared import Cm
 from docx.oxml.ns import qn
 
 
 DEFAULT_CITATION_PATTERN = r"\[\d+(?:\s*[-\u2013,\uff0c]\s*\d+)*\]"
 CJK_ALNUM_SPACING_PATTERN = re.compile(r"(?<=[\u3400-\u9fff])\s+(?=[A-Za-z0-9])|(?<=[A-Za-z0-9])\s+(?=[\u3400-\u9fff])")
 CJK_LATIN_SPACING_PATTERN = CJK_ALNUM_SPACING_PATTERN
+EMU_PER_CM = int(Cm(1))
 
 
 def load_config(path: Path | None) -> dict:
@@ -125,6 +127,25 @@ def style_office_metadata_issues(doc: Document, config: dict) -> list[dict]:
     return issues
 
 
+def figure_table_image_widths_cm(doc: Document) -> list[float]:
+    widths = []
+    for table in doc.tables:
+        is_figure_table = (
+            len(table.rows) == 2
+            and len(table.columns) == 1
+            and bool(table.cell(0, 0)._tc.xpath(".//w:drawing") or table.cell(0, 0)._tc.xpath(".//w:pict"))
+        )
+        if not is_figure_table:
+            continue
+        for inline in table.cell(0, 0)._tc.xpath(".//wp:inline"):
+            extents = inline.xpath("./wp:extent")
+            if not extents:
+                continue
+            width = int(extents[0].get("cx", "0"))
+            widths.append(round(width / EMU_PER_CM, 2))
+    return widths
+
+
 def inspect_docx(path: Path, config: dict) -> dict:
     doc = Document(str(path))
     citation_re = re.compile(config.get("citation_pattern", DEFAULT_CITATION_PATTERN))
@@ -208,6 +229,7 @@ def inspect_docx(path: Path, config: dict) -> dict:
         "style_office_metadata_issues": style_office_metadata_issues(doc, config),
         "missing_configured_styles": [name for name in required_styles if name not in existing_styles],
         "figure_table_count": figure_tables,
+        "figure_table_image_widths_cm": figure_table_image_widths_cm(doc),
         "top_level_image_paragraph_count": sum(
             1 for paragraph in doc.paragraphs if paragraph._p.xpath(".//w:drawing") or paragraph._p.xpath(".//w:pict")
         ),

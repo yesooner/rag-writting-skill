@@ -69,6 +69,7 @@ The config controls:
 - Office style metadata
 - paragraph classification patterns
 - figure wrapping
+- figure table image sizing
 - table formatting
 - citation superscripting
 - formula protection
@@ -247,6 +248,7 @@ Office style metadata issues
 paragraph classification coverage
 image count
 figure-table count
+figure-table image widths
 top-level loose image paragraph count
 regular table count
 formula node count
@@ -270,6 +272,10 @@ Figure and caption checks:
 - Row 1 contains the image.
 - Row 2 contains the caption.
 - Caption style, font, size, alignment, and spacing must come from the confirmed style table.
+- Images in figure tables must use a consistent configured width.
+- The default figure-table image width is `7.7 cm`.
+- Preserve aspect ratio by default. Do not force a fixed height unless the user explicitly confirms distortion or cropping is acceptable.
+- The formatting and inspection reports must include `figure_table_image_widths_cm`.
 
 Table checks:
 
@@ -320,6 +326,7 @@ After formatting or inspection, report:
 - Office style metadata issues
 - image count
 - figure-table count
+- figure-table image widths
 - top-level loose image paragraph count
 - in-text citation count and superscript count
 - reference-list number superscript count

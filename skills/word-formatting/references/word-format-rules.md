@@ -62,6 +62,10 @@ The confirmed form should be converted to JSON with this shape:
     "parameter_output_format": "MathML",
     "body_parameter_output_format": "MathML"
   },
+  "figures": {
+    "table_image_width_cm": 7.7,
+    "preserve_aspect_ratio": true
+  },
   "styles": {
     "body": {
       "name": "Body",
@@ -154,6 +158,14 @@ If `features.wrap_figures` is true, a valid figure block is a one-column, two-ro
 5. Borders are nil.
 
 Caption detection must use the confirmed `patterns.figure_caption`. Do not assume that every `Figure <number>` sentence is a caption; the default English pattern excludes `Figure 1 shows ...`.
+
+Figure-table image sizing:
+
+- Default `figures.table_image_width_cm` is `7.7`.
+- Images in figure tables are resized to the configured width.
+- Preserve aspect ratio by default with `figures.preserve_aspect_ratio=true`.
+- Do not force fixed height unless the user explicitly confirms distortion or cropping is acceptable.
+- Inspection and formatting reports must include `figure_table_image_widths_cm`.
 
 ## Tables
 
