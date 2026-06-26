@@ -47,6 +47,10 @@ def load_template(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def visible_paragraph_text(paragraph) -> str:
+    return "".join(paragraph._p.xpath(".//w:t/text()"))
+
+
 class WordFormattingTests(unittest.TestCase):
     def test_default_template_uses_required_page_margins_and_cleanup_features(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -64,6 +68,9 @@ class WordFormattingTests(unittest.TestCase):
             self.assertEqual(config["formula"]["body_parameter_output_format"], "MathML")
             self.assertEqual(config["figures"]["table_image_width_cm"], 7.7)
             self.assertTrue(config["figures"]["preserve_aspect_ratio"])
+            self.assertTrue(config["captions"]["use_word_caption_fields"])
+            self.assertEqual(config["captions"]["figure_seq_id"], "Figure")
+            self.assertEqual(config["captions"]["table_seq_id"], "Table")
             self.assertTrue(config["styles"]["h1"]["q_format"])
             self.assertEqual(config["styles"]["h1"]["outline_level"], 0)
             self.assertEqual(config["styles"]["h2"]["outline_level"], 1)
@@ -216,6 +223,31 @@ class WordFormattingTests(unittest.TestCase):
 
             self.assertEqual(width_cm, 7.7)
             self.assertEqual(report["figure_table_image_widths_cm"], [7.7])
+
+    def test_format_converts_figure_and_table_captions_to_seq_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "caption-fields.docx"
+            config_path = Path(tmp) / "config.json"
+            config = load_template(config_path)
+            config_path.write_text(json.dumps(config, ensure_ascii=False), encoding="utf-8")
+
+            doc = Document()
+            doc.add_paragraph("Figure 3 Test image")
+            doc.add_paragraph("\u8868 6 \u7d2f\u8ba1\u8017\u80fd")
+            doc.save(docx)
+
+            result = run_format_docx("--docx", str(docx), "--config", str(config_path), "--json")
+            report = json.loads(result.stdout)
+            formatted = Document(docx)
+            text = [visible_paragraph_text(paragraph) for paragraph in formatted.paragraphs]
+            instr_values = formatted._body._element.xpath(".//w:fldSimple/@w:instr")
+
+            self.assertIn("Figure 3 Test image", text)
+            self.assertIn("\u88686\u7d2f\u8ba1\u8017\u80fd", text)
+            self.assertTrue(any("SEQ Figure" in value for value in instr_values))
+            self.assertTrue(any("SEQ Table" in value for value in instr_values))
+            self.assertEqual(report["caption_fields_converted"], 2)
+            self.assertEqual(report["caption_seq_field_counts"], {"Figure": 1, "Table": 1})
 
 
 if __name__ == "__main__":

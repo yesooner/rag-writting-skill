@@ -66,6 +66,13 @@ The confirmed form should be converted to JSON with this shape:
     "table_image_width_cm": 7.7,
     "preserve_aspect_ratio": true
   },
+  "captions": {
+    "use_word_caption_fields": true,
+    "figure_seq_id": "Figure",
+    "table_seq_id": "Table",
+    "skip_existing_seq_fields": true,
+    "preserve_caption_text": true
+  },
   "styles": {
     "body": {
       "name": "Body",
@@ -158,6 +165,16 @@ If `features.wrap_figures` is true, a valid figure block is a one-column, two-ro
 5. Borders are nil.
 
 Caption detection must use the confirmed `patterns.figure_caption`. Do not assume that every `Figure <number>` sentence is a caption; the default English pattern excludes `Figure 1 shows ...`.
+
+Word caption fields:
+
+- If `captions.use_word_caption_fields` is true, convert manual figure and table caption numbers into Word `SEQ` fields.
+- Figure captions use `SEQ Figure \* ARABIC`.
+- Table captions use `SEQ Table \* ARABIC`.
+- Preserve visible caption text and replace only the manual number with the field result.
+- Skip existing `SEQ` fields when `captions.skip_existing_seq_fields=true`.
+- After inserting, deleting, or moving figures or tables, users must update fields in Word/WPS to refresh linked caption numbers.
+- Inspection and formatting reports must include `caption_seq_field_counts`.
 
 Figure-table image sizing:
 

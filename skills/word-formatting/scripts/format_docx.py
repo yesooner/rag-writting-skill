@@ -75,6 +75,13 @@ def default_config() -> dict:
             "table_image_width_cm": 7.7,
             "preserve_aspect_ratio": True,
         },
+        "captions": {
+            "use_word_caption_fields": True,
+            "figure_seq_id": "Figure",
+            "table_seq_id": "Table",
+            "skip_existing_seq_fields": True,
+            "preserve_caption_text": True,
+        },
         "citation_pattern": DEFAULT_CITATION_PATTERN,
         "styles": {
             "title": style("Title", "SimHei", "Times New Roman", 18, True, "center", 1.5, 0, 0, 0, ui_priority=1, keep_next=True, keep_lines=True),
@@ -590,6 +597,95 @@ def format_tables(doc: Document, styles: dict[str, object], config: dict) -> tup
     return figure_count, regular_count
 
 
+def paragraph_has_seq_field(paragraph) -> bool:
+    instr_values = paragraph._p.xpath(".//w:fldSimple/@w:instr | .//w:instrText/text()")
+    return any("SEQ " in str(value) for value in instr_values)
+
+
+def caption_match(text: str, caption_type: str):
+    if caption_type == "figure":
+        patterns = [
+            re.compile(r"^(图)(\s*)(\d+)(.*)$"),
+            re.compile(r"^(Figure)(\s+)(\d+)(.*)$", re.IGNORECASE),
+        ]
+    else:
+        patterns = [
+            re.compile(r"^(表)(\s*)(\d+)(.*)$"),
+            re.compile(r"^(Table)(\s+)(\d+)(.*)$", re.IGNORECASE),
+        ]
+    for pattern in patterns:
+        match = pattern.match(text.strip())
+        if match:
+            return match
+    return None
+
+
+def make_seq_field(seq_id: str, display_text: str, source_run=None):
+    field = OxmlElement("w:fldSimple")
+    field.set(qn("w:instr"), f" SEQ {seq_id} \\* ARABIC ")
+    field.append(make_text_run(display_text, source_run, False))
+    return field
+
+
+def replace_paragraph_with_caption_field(paragraph, label: str, separator: str, number: str, suffix: str, seq_id: str) -> None:
+    source_run = paragraph.runs[0]._r if paragraph.runs else None
+    paragraph_element = paragraph._p
+    for child in list(paragraph_element):
+        if child.tag in (qn("w:r"), qn("w:hyperlink"), qn("w:fldSimple")):
+            paragraph_element.remove(child)
+    paragraph_element.append(make_text_run(f"{label}{separator}", source_run, False))
+    paragraph_element.append(make_seq_field(seq_id, number, source_run))
+    if suffix:
+        paragraph_element.append(make_text_run(suffix, source_run, False))
+
+
+def convert_caption_fields(doc: Document, config: dict) -> int:
+    captions = config.get("captions", {})
+    if not captions.get("use_word_caption_fields", False):
+        return 0
+    converted = 0
+    for paragraph in iter_all_paragraphs(doc):
+        text = paragraph.text.strip()
+        if not text:
+            continue
+        if captions.get("skip_existing_seq_fields", True) and paragraph_has_seq_field(paragraph):
+            continue
+        figure_match = caption_match(text, "figure")
+        table_match = caption_match(text, "table")
+        if figure_match:
+            replace_paragraph_with_caption_field(
+                paragraph,
+                figure_match.group(1),
+                figure_match.group(2),
+                figure_match.group(3),
+                figure_match.group(4),
+                captions.get("figure_seq_id", "Figure"),
+            )
+            converted += 1
+        elif table_match:
+            replace_paragraph_with_caption_field(
+                paragraph,
+                table_match.group(1),
+                table_match.group(2),
+                table_match.group(3),
+                table_match.group(4),
+                captions.get("table_seq_id", "Table"),
+            )
+            converted += 1
+    return converted
+
+
+def caption_seq_field_counts(doc: Document) -> dict[str, int]:
+    counts = {"Figure": 0, "Table": 0}
+    for value in doc._body._element.xpath(".//w:fldSimple/@w:instr | .//w:instrText/text()"):
+        text = str(value)
+        if "SEQ Figure" in text:
+            counts["Figure"] += 1
+        if "SEQ Table" in text:
+            counts["Table"] += 1
+    return counts
+
+
 def iter_all_paragraphs(doc: Document):
     seen = set()
     for paragraph in doc.paragraphs:
@@ -662,12 +758,16 @@ def normalize_cjk_latin_spacing(doc: Document) -> int:
     return changed
 
 
+def paragraph_visible_text(paragraph) -> str:
+    return "".join(paragraph._p.xpath(".//w:t/text()"))
+
+
 def document_text(doc: Document) -> str:
-    return "\n".join(paragraph.text for paragraph in doc.paragraphs)
+    return "\n".join(paragraph_visible_text(paragraph) for paragraph in doc.paragraphs)
 
 
 def normalized_document_text(doc: Document) -> str:
-    return "\n".join(normalize_cjk_latin_spacing_text(paragraph.text) for paragraph in doc.paragraphs)
+    return "\n".join(normalize_cjk_latin_spacing_text(paragraph_visible_text(paragraph)) for paragraph in doc.paragraphs)
 
 
 def used_style_names(doc: Document) -> set[str]:
@@ -697,11 +797,12 @@ def remove_unused_custom_styles(doc: Document, config: dict) -> list[str]:
     return removed
 
 
-def make_text_run(text: str, source_run, superscript: bool):
+def make_text_run(text: str, source_run=None, superscript: bool = False):
     new_run = OxmlElement("w:r")
-    old_rpr = source_run.find(qn("w:rPr"))
-    if old_rpr is not None:
-        new_run.append(deepcopy(old_rpr))
+    if source_run is not None:
+        old_rpr = source_run.find(qn("w:rPr"))
+        if old_rpr is not None:
+            new_run.append(deepcopy(old_rpr))
     rpr = new_run.find(qn("w:rPr"))
     if rpr is None:
         rpr = OxmlElement("w:rPr")
@@ -802,6 +903,7 @@ def collect_report(doc: Document, target: Path, backup: Path | None, config: dic
         "body_parameter_output_format": body_parameter_output_format(config),
         "formula_hash_ok": formula_hash_ok,
         "style_office_metadata_issues": style_office_metadata_issues(doc, config),
+        "caption_seq_field_counts": caption_seq_field_counts(doc),
         **extra,
     }
 
@@ -823,6 +925,7 @@ def format_docx(path: Path, config: dict) -> dict:
     wrapped = wrap_figures(doc, styles, config) if config.get("features", {}).get("wrap_figures", False) else 0
     figure_tables, regular_tables = format_tables(doc, styles, config) if config.get("features", {}).get("format_tables", False) else (0, len(doc.tables))
     cjk_latin_spaces_removed = normalize_cjk_latin_spacing(doc) if normalize_spacing_enabled else 0
+    caption_fields_converted = convert_caption_fields(doc, config)
     citation_marks = superscript_citations(doc, config) if config.get("features", {}).get("superscript_citations", False) else 0
     unused_styles_removed = remove_unused_custom_styles(doc, config) if config.get("features", {}).get("remove_unused_styles", False) else []
 
@@ -847,6 +950,7 @@ def format_docx(path: Path, config: dict) -> dict:
             "formatted_figure_tables": figure_tables,
             "formatted_regular_tables": regular_tables,
             "citation_marks_changed": citation_marks,
+            "caption_fields_converted": caption_fields_converted,
             "cjk_alnum_spaces_removed": cjk_latin_spaces_removed,
             "cjk_latin_spaces_removed": cjk_latin_spaces_removed,
             "unused_styles_removed": unused_styles_removed,

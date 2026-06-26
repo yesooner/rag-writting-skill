@@ -36,6 +36,13 @@ def default_config() -> dict:
             "parameter_output_format": "MathML",
             "body_parameter_output_format": "MathML",
         },
+        "captions": {
+            "use_word_caption_fields": True,
+            "figure_seq_id": "Figure",
+            "table_seq_id": "Table",
+            "skip_existing_seq_fields": True,
+            "preserve_caption_text": True,
+        },
     }
 
 
@@ -146,6 +153,17 @@ def figure_table_image_widths_cm(doc: Document) -> list[float]:
     return widths
 
 
+def caption_seq_field_counts(doc: Document) -> dict[str, int]:
+    counts = {"Figure": 0, "Table": 0}
+    for value in doc._body._element.xpath(".//w:fldSimple/@w:instr | .//w:instrText/text()"):
+        text = str(value)
+        if "SEQ Figure" in text:
+            counts["Figure"] += 1
+        if "SEQ Table" in text:
+            counts["Table"] += 1
+    return counts
+
+
 def inspect_docx(path: Path, config: dict) -> dict:
     doc = Document(str(path))
     citation_re = re.compile(config.get("citation_pattern", DEFAULT_CITATION_PATTERN))
@@ -230,6 +248,7 @@ def inspect_docx(path: Path, config: dict) -> dict:
         "missing_configured_styles": [name for name in required_styles if name not in existing_styles],
         "figure_table_count": figure_tables,
         "figure_table_image_widths_cm": figure_table_image_widths_cm(doc),
+        "caption_seq_field_counts": caption_seq_field_counts(doc),
         "top_level_image_paragraph_count": sum(
             1 for paragraph in doc.paragraphs if paragraph._p.xpath(".//w:drawing") or paragraph._p.xpath(".//w:pict")
         ),
