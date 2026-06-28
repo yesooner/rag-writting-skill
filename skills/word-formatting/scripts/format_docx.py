@@ -532,6 +532,56 @@ def figure_table_image_widths_cm(doc: Document) -> list[float]:
     return widths
 
 
+def is_figure_table(table) -> bool:
+    return (
+        len(table.rows) == 2
+        and len(table.columns) == 1
+        and bool(table.cell(0, 0)._tc.xpath(".//w:drawing") or table.cell(0, 0)._tc.xpath(".//w:pict"))
+    )
+
+
+def remove_repeat_header_from_row(row) -> int:
+    trpr = row._tr.trPr
+    if trpr is None:
+        return 0
+    removed = 0
+    for node in list(trpr.findall(qn("w:tblHeader"))):
+        trpr.remove(node)
+        removed += 1
+    return removed
+
+
+def figure_table_repeating_header_row_count(doc: Document) -> int:
+    count = 0
+    for table in doc.tables:
+        if not is_figure_table(table):
+            continue
+        for row in table.rows:
+            if row._tr.xpath("./w:trPr/w:tblHeader[not(@w:val='0') and not(@w:val='false')]"):
+                count += 1
+    return count
+
+
+def regular_table_vertical_alignment_issues(doc: Document) -> list[dict]:
+    issues = []
+    for table_index, table in enumerate(doc.tables, 1):
+        if is_figure_table(table):
+            continue
+        for row_index, row in enumerate(table.rows, 1):
+            for col_index, cell in enumerate(row.cells, 1):
+                values = cell._tc.xpath("./w:tcPr/w:vAlign/@w:val")
+                if values != ["center"]:
+                    issues.append(
+                        {
+                            "table_index": table_index,
+                            "row_index": row_index,
+                            "column_index": col_index,
+                            "vAlign": values[0] if values else None,
+                        }
+                    )
+    return issues
+
+
 def wrap_figures(doc: Document, styles: dict[str, object], config: dict) -> int:
     body = doc._body._element
     pairs = []
@@ -565,14 +615,11 @@ def format_tables(doc: Document, styles: dict[str, object], config: dict) -> tup
     figure_count = 0
     regular_count = 0
     for table in doc.tables:
-        is_figure_table = (
-            len(table.rows) == 2
-            and len(table.columns) == 1
-            and bool(table.cell(0, 0)._tc.xpath(".//w:drawing") or table.cell(0, 0)._tc.xpath(".//w:pict"))
-        )
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
-        if is_figure_table:
+        if is_figure_table(table):
             set_table_borders(table, visible=False)
+            for row in table.rows:
+                remove_repeat_header_from_row(row)
             for cell in table._cells:
                 cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
                 set_cell_margins(cell, "0")
@@ -879,9 +926,7 @@ def collect_report(doc: Document, target: Path, backup: Path | None, config: dic
     figure_tables = sum(
         1
         for table in doc.tables
-        if len(table.rows) == 2
-        and len(table.columns) == 1
-        and bool(table.cell(0, 0)._tc.xpath(".//w:drawing") or table.cell(0, 0)._tc.xpath(".//w:pict"))
+        if is_figure_table(table)
     )
     return {
         "target": str(target),
@@ -892,6 +937,8 @@ def collect_report(doc: Document, target: Path, backup: Path | None, config: dic
         "image_count": len(doc.inline_shapes),
         "figure_table_count": figure_tables,
         "figure_table_image_widths_cm": figure_table_image_widths_cm(doc),
+        "figure_table_repeating_header_row_count": figure_table_repeating_header_row_count(doc),
+        "regular_table_vertical_alignment_issues": regular_table_vertical_alignment_issues(doc),
         "top_level_image_paragraph_count": sum(1 for p in doc.paragraphs if p._p.xpath(".//w:drawing") or p._p.xpath(".//w:pict")),
         "body_citation_count": body_total,
         "body_citation_superscript_count": body_super,

@@ -470,6 +470,9 @@ Figure and caption rules:
 - Figure-table images use a consistent configured width; the default is `7.7 cm`.
 - Aspect ratio is preserved by default.
 - Reports include `figure_table_image_widths_cm`.
+- Figure-table rows must not repeat as header rows at the top of each page; reports include `figure_table_repeating_header_row_count`.
+- Regular data-table cells must use vertical center alignment; reports include `regular_table_vertical_alignment_issues`.
+- The figure-table repeat-header rule must not remove or alter data-table repeat-header row settings.
 
 Citation superscript rules:
 
@@ -531,8 +534,10 @@ The final report should include:
 - image count
 - figure-table count
 - figure-table image widths
+- figure-table repeating header row count
 - caption SEQ field counts
 - top-level loose image paragraph count
+- regular table vertical alignment issues
 - in-text citation count and superscript count
 - reference-list number superscript count
 - formula node count and hash status

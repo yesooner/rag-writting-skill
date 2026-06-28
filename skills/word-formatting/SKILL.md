@@ -250,8 +250,10 @@ paragraph classification coverage
 image count
 figure-table count
 figure-table image widths
+figure-table repeating header row count
 caption SEQ field counts
 top-level loose image paragraph count
+regular table vertical alignment issues
 regular table count
 formula node count
 formula output format
@@ -273,6 +275,7 @@ Figure and caption checks:
 - Figures may be wrapped in a one-column, two-row table only after user confirmation.
 - Row 1 contains the image.
 - Row 2 contains the caption.
+- Figure tables must not repeat rows as header rows at the top of each page; remove `w:tblHeader` from figure-table rows.
 - Caption style, font, size, alignment, and spacing must come from the confirmed style table.
 - Figure and table captions must be real Word caption fields when `captions.use_word_caption_fields=true`.
 - Figure numbers must use `SEQ Figure \* ARABIC`.
@@ -284,11 +287,16 @@ Figure and caption checks:
 - The default figure-table image width is `7.7 cm`.
 - Preserve aspect ratio by default. Do not force a fixed height unless the user explicitly confirms distortion or cropping is acceptable.
 - The formatting and inspection reports must include `figure_table_image_widths_cm`.
+- The formatting and inspection reports must include `figure_table_repeating_header_row_count`; it must be `0` after formatting.
 
 Table checks:
 
 - Table captions and table body text must use the confirmed styles.
 - Table body font size and alignment must be checked.
+- Regular data-table cell text must be vertically centered inside each cell.
+- Regular data-table cells must not be top-aligned or bottom-aligned; write `w:vAlign w:val="center"`.
+- Do not remove or alter data-table row repeat-header settings when applying the figure-table repeat-header rule.
+- The formatting and inspection reports must include `regular_table_vertical_alignment_issues`; it must be empty after formatting.
 - Header-row bolding or other table conventions must be controlled by config.
 
 Style metadata checks:
@@ -335,8 +343,10 @@ After formatting or inspection, report:
 - image count
 - figure-table count
 - figure-table image widths
+- figure-table repeating header row count
 - caption SEQ field counts
 - top-level loose image paragraph count
+- regular table vertical alignment issues
 - in-text citation count and superscript count
 - reference-list number superscript count
 - formula node count and hash status

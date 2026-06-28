@@ -11,6 +11,7 @@ from pathlib import Path
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
 from docx.shared import Cm
 
 
@@ -49,6 +50,13 @@ def load_template(path: Path) -> dict:
 
 def visible_paragraph_text(paragraph) -> str:
     return "".join(paragraph._p.xpath(".//w:t/text()"))
+
+
+def mark_repeat_header(row) -> None:
+    trpr = row._tr.get_or_add_trPr()
+    header = OxmlElement("w:tblHeader")
+    header.set(qn("w:val"), "1")
+    trpr.append(header)
 
 
 class WordFormattingTests(unittest.TestCase):
@@ -223,6 +231,43 @@ class WordFormattingTests(unittest.TestCase):
 
             self.assertEqual(width_cm, 7.7)
             self.assertEqual(report["figure_table_image_widths_cm"], [7.7])
+
+    def test_format_removes_repeat_header_only_from_figure_tables_and_centers_regular_table_text(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "table-row-options.docx"
+            image = Path(tmp) / "image.png"
+            config_path = Path(tmp) / "config.json"
+            config = load_template(config_path)
+            config_path.write_text(json.dumps(config, ensure_ascii=False), encoding="utf-8")
+            image.write_bytes(base64.b64decode(PNG_1X1))
+
+            doc = Document()
+            figure_table = doc.add_table(rows=2, cols=1)
+            figure_table.cell(0, 0).paragraphs[0].add_run().add_picture(str(image), width=Cm(3.0))
+            figure_table.cell(1, 0).text = "Figure 1 Test image"
+            mark_repeat_header(figure_table.rows[0])
+
+            data_table = doc.add_table(rows=2, cols=2)
+            data_table.cell(0, 0).text = "A"
+            data_table.cell(0, 1).text = "B"
+            data_table.cell(1, 0).text = "1"
+            data_table.cell(1, 1).text = "2"
+            mark_repeat_header(data_table.rows[0])
+            doc.save(docx)
+
+            result = run_format_docx("--docx", str(docx), "--config", str(config_path), "--json")
+            report = json.loads(result.stdout)
+            formatted = Document(docx)
+            formatted_figure = formatted.tables[0]
+            formatted_data = formatted.tables[1]
+
+            self.assertFalse(formatted_figure.rows[0]._tr.xpath("./w:trPr/w:tblHeader"))
+            self.assertTrue(formatted_data.rows[0]._tr.xpath("./w:trPr/w:tblHeader"))
+            for row in formatted_data.rows:
+                for cell in row.cells:
+                    self.assertEqual(cell._tc.xpath("./w:tcPr/w:vAlign/@w:val"), ["center"])
+            self.assertEqual(report["figure_table_repeating_header_row_count"], 0)
+            self.assertEqual(report["regular_table_vertical_alignment_issues"], [])
 
     def test_format_converts_figure_and_table_captions_to_seq_fields(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -153,6 +153,45 @@ def figure_table_image_widths_cm(doc: Document) -> list[float]:
     return widths
 
 
+def is_figure_table(table) -> bool:
+    return (
+        len(table.rows) == 2
+        and len(table.columns) == 1
+        and bool(table.cell(0, 0)._tc.xpath(".//w:drawing") or table.cell(0, 0)._tc.xpath(".//w:pict"))
+    )
+
+
+def figure_table_repeating_header_row_count(doc: Document) -> int:
+    count = 0
+    for table in doc.tables:
+        if not is_figure_table(table):
+            continue
+        for row in table.rows:
+            if row._tr.xpath("./w:trPr/w:tblHeader[not(@w:val='0') and not(@w:val='false')]"):
+                count += 1
+    return count
+
+
+def regular_table_vertical_alignment_issues(doc: Document) -> list[dict]:
+    issues = []
+    for table_index, table in enumerate(doc.tables, 1):
+        if is_figure_table(table):
+            continue
+        for row_index, row in enumerate(table.rows, 1):
+            for col_index, cell in enumerate(row.cells, 1):
+                values = cell._tc.xpath("./w:tcPr/w:vAlign/@w:val")
+                if values != ["center"]:
+                    issues.append(
+                        {
+                            "table_index": table_index,
+                            "row_index": row_index,
+                            "column_index": col_index,
+                            "vAlign": values[0] if values else None,
+                        }
+                    )
+    return issues
+
+
 def caption_seq_field_counts(doc: Document) -> dict[str, int]:
     counts = {"Figure": 0, "Table": 0}
     for value in doc._body._element.xpath(".//w:fldSimple/@w:instr | .//w:instrText/text()"):
@@ -220,12 +259,7 @@ def inspect_docx(path: Path, config: dict) -> dict:
     regular_tables = 0
     caption_sizes = []
     for table in doc.tables:
-        is_figure_table = (
-            len(table.rows) == 2
-            and len(table.columns) == 1
-            and bool(table.cell(0, 0)._tc.xpath(".//w:drawing") or table.cell(0, 0)._tc.xpath(".//w:pict"))
-        )
-        if is_figure_table:
+        if is_figure_table(table):
             figure_tables += 1
             for paragraph in table.cell(1, 0).paragraphs:
                 for run in paragraph.runs:
@@ -248,6 +282,8 @@ def inspect_docx(path: Path, config: dict) -> dict:
         "missing_configured_styles": [name for name in required_styles if name not in existing_styles],
         "figure_table_count": figure_tables,
         "figure_table_image_widths_cm": figure_table_image_widths_cm(doc),
+        "figure_table_repeating_header_row_count": figure_table_repeating_header_row_count(doc),
+        "regular_table_vertical_alignment_issues": regular_table_vertical_alignment_issues(doc),
         "caption_seq_field_counts": caption_seq_field_counts(doc),
         "top_level_image_paragraph_count": sum(
             1 for paragraph in doc.paragraphs if paragraph._p.xpath(".//w:drawing") or paragraph._p.xpath(".//w:pict")

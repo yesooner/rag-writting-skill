@@ -184,6 +184,14 @@ Figure-table image sizing:
 - Do not force fixed height unless the user explicitly confirms distortion or cropping is acceptable.
 - Inspection and formatting reports must include `figure_table_image_widths_cm`.
 
+Figure-table row options:
+
+- Figure tables are the one-column, two-row tables that contain embedded images.
+- Figure-table rows must not repeat as header rows at the top of each page.
+- Remove `w:tblHeader` from figure-table rows during formatting.
+- Do not apply this repeat-header removal to regular data tables.
+- Inspection and formatting reports must include `figure_table_repeating_header_row_count`; it must be `0` after formatting.
+
 ## Tables
 
 If `features.format_tables` is true:
@@ -192,6 +200,10 @@ If `features.format_tables` is true:
 - header row is bold unless the style config says otherwise
 - figure tables remain borderless
 - ordinary tables use simple black academic borders by default
+- regular data-table cell text must be vertically centered with `w:vAlign w:val="center"`
+- regular data-table cells must not be top-aligned or bottom-aligned
+- do not remove or alter data-table repeat-header row settings when clearing figure-table repeat headers
+- inspection and formatting reports must include `regular_table_vertical_alignment_issues`
 
 ## Citations
 
