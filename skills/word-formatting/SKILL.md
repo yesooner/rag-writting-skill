@@ -118,6 +118,14 @@ h2 outline_level=1
 h3 outline_level=2
 ```
 
+Default H1/H2/H3 line spacing is single spacing:
+
+```text
+h1 line_spacing=1.0
+h2 line_spacing=1.0
+h3 line_spacing=1.0
+```
+
 The formatter must write these values into Word style XML:
 
 ```text

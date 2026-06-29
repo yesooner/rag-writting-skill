@@ -98,7 +98,7 @@ The confirmed form should be converted to JSON with this shape:
       "size_pt": 14,
       "bold": true,
       "alignment": "left",
-      "line_spacing": 1.5,
+      "line_spacing": 1.0,
       "space_before_pt": 0,
       "space_after_pt": 0,
       "first_line_indent_pt": 0,
@@ -140,6 +140,14 @@ Heading styles must also define:
 h1 outline_level=0
 h2 outline_level=1
 h3 outline_level=2
+```
+
+Default H1/H2/H3 line spacing is single spacing:
+
+```text
+h1 line_spacing=1.0
+h2 line_spacing=1.0
+h3 line_spacing=1.0
 ```
 
 The formatter must write these values into Word style XML:
